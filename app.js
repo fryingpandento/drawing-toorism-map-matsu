@@ -392,8 +392,8 @@ async function searchSpots(layer) {
             seen.add(name);
 
             // Calc lat/lon
-            const lat = el.lat || el.center?.lat;
-            const lon = el.lon || el.center?.lon;
+            const lat = el.lat || (el.center && el.center.lat);
+            const lon = el.lon || (el.center && el.center.lon);
 
             if (lat && lon) {
                 allSpots.push({ ...el, lat, lon });
