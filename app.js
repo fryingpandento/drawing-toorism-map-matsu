@@ -159,19 +159,11 @@ async function searchSpots() {
     let queryParts = "";
 
     try {
-        // Simplify polygon for performance
-        const rawLatLngs = currentPolygon.getLatLngs()[0];
-        if (!rawLatLngs || rawLatLngs.length === 0) throw new Error("無効なエリアです");
+        // Use raw polygon for maximum accuracy (reverted simplification)
+        const latlngs = currentPolygon.getLatLngs()[0];
+        if (!latlngs || latlngs.length === 0) throw new Error("無効なエリアです");
 
-        // Use much finer tolerance (0.00001 is approx 1m) to preserve shape of small areas
-        let simplifiedLatLngs = simplifyLatLngs(rawLatLngs, 0.00001);
-
-        // If simplification destroys the polygon (too few points), use raw
-        if (simplifiedLatLngs.length < 3) {
-            simplifiedLatLngs = rawLatLngs;
-        }
-
-        const polyStr = simplifiedLatLngs.map(ll => `${ll.lat} ${ll.lng}`).join(' ');
+        const polyStr = latlngs.map(ll => `${ll.lat} ${ll.lng}`).join(' ');
 
         selectedCats.forEach(cat => {
             if (TOURISM_FILTERS[cat]) {
@@ -458,33 +450,12 @@ async function searchSpots(centerLatLng = null) {
         console.error(e);
         alert("データ取得に失敗しました。");
     } finally {
+        ```
         loader.classList.add('hidden');
     }
 }
 
 // --- Utils ---
-function simplifyLatLngs(latlngs, tolerance) {
-    if (latlngs.length <= 2) return latlngs;
-
-    const simplified = [latlngs[0]];
-    let lastPoint = latlngs[0];
-
-    for (let i = 1; i < latlngs.length; i++) {
-        const point = latlngs[i];
-        // Simple distance check (squared Euclidean distance for speed)
-        const dx = point.lat - lastPoint.lat;
-        const dy = point.lng - lastPoint.lng;
-        // 0.0001 degrees is roughly 11 meters. tolerance squared.
-        if ((dx * dx + dy * dy) > (tolerance * tolerance)) {
-            simplified.push(point);
-            lastPoint = point;
-        }
-    }
-    // Always include the last point to close the polygon correctly (or nearly correctly)
-    simplified.push(latlngs[latlngs.length - 1]);
-
-    return simplified;
-}
 
 function displayResults(spots) {
     const list = document.getElementById('results-list');
