@@ -140,6 +140,20 @@ function initUI() {
     document.getElementById('filter-web').addEventListener('change', applyFiltersBound);
     document.getElementById('filter-wiki').addEventListener('change', applyFiltersBound);
     document.getElementById('filter-hours').addEventListener('change', applyFiltersBound);
+
+    // Radius Slider Listener
+    const radiusSlider = document.getElementById('radius-select');
+    const radiusVal = document.getElementById('radius-val');
+    if (radiusSlider && radiusVal) {
+        radiusSlider.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            if (val >= 1000) {
+                radiusVal.textContent = (val / 1000) + "km";
+            } else {
+                radiusVal.textContent = val + "m";
+            }
+        });
+    }
 }
 
 // --- Mode Management ---
