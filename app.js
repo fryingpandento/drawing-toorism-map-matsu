@@ -472,8 +472,18 @@ function displayResults(spots) {
     // Auto-expand sidebar on mobile when results are found
     if (window.innerWidth <= 768) {
         const sidebar = document.getElementById('sidebar');
-        if (sidebar && !sidebar.classList.contains('expanded')) {
-            sidebar.classList.add('expanded');
+        const resultsSection = document.getElementById('results-section');
+
+        if (sidebar) {
+            if (!sidebar.classList.contains('expanded')) {
+                sidebar.classList.add('expanded');
+            }
+            // Scroll to results section for visibility
+            if (resultsSection) {
+                setTimeout(() => {
+                    resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 300); // 300ms matches CSS transition duration
+            }
         }
     }
 }
