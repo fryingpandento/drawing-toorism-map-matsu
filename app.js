@@ -169,7 +169,10 @@ function setMode(mode) {
     // Toggle Radius Control
     const radiusCtrl = document.getElementById('radius-control');
     if (radiusCtrl) {
+        console.log(`Switching mode to ${mode}. Radius control found.`);
         radiusCtrl.style.display = (mode === 'radius') ? 'block' : 'none';
+    } else {
+        console.error("Radius control element not found!");
     }
 
     const hint = document.getElementById('mode-hint');
