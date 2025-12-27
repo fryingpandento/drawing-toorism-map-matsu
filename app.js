@@ -1,4 +1,4 @@
-// --- Constants ---
+// --- Constants (Identical to app.py) ---
 const REGIONS = {
     "今いる場所 (デフォルト)": [34.9858, 135.7588, 13],
     "北海道 (札幌)": [43.0618, 141.3545, 10],
@@ -14,30 +14,30 @@ const REGIONS = {
 
 const TOURISM_FILTERS = {
     "📸 絶景・自然": [
-        'node["tourism"="viewpoint"]',      // 展望台
-        'node["natural"="peak"]',          // 山頂
-        'node["waterway"="waterfall"]',     // 滝
-        'node["natural"="beach"]',         // ビーチ
+        'node["tourism"="viewpoint"]',
+        'node["natural"="peak"]',
+        'node["waterway"="waterfall"]',
+        'node["natural"="beach"]',
         'way["natural"="beach"]',
-        'node["leisure"="park"]'           // 公園
+        'node["leisure"="park"]'
     ],
     "⛩️ 歴史・神社仏閣": [
-        'node["historic"~"castle|ruins|memorial|monument"]', // 城・遺跡・記念碑
+        'node["historic"~"castle|ruins|memorial|monument"]',
         'way["historic"~"castle|ruins"]',
-        'node["amenity"="place_of_worship"]', // 神社・寺院・教会
+        'node["amenity"="place_of_worship"]',
         'way["amenity"="place_of_worship"]',
-        'node["historic"="wayside_shrine"]'   // 道端の祠
+        'node["historic"="wayside_shrine"]'
     ],
     "🎨 芸術・博物館": [
-        'node["tourism"="museum"]',        // 博物館・美術館
-        'node["tourism"="artwork"]',       // アート作品・像
+        'node["tourism"="museum"]',
+        'node["tourism"="artwork"]',
         'node["tourism"="gallery"]',
         'way["tourism"="museum"]'
     ],
     "♨️ 温泉・リラックス": [
-        'node["amenity"="public_bath"]',   // 銭湯・温泉
-        'node["natural"="hot_spring"]',    // 源泉
-        'node["tourism"="hotel"]'          // 宿泊
+        'node["amenity"="public_bath"]',
+        'node["natural"="hot_spring"]',
+        'node["tourism"="hotel"]'
     ],
     "🎡 エンタメ・体験": [
         'node["tourism"="theme_park"]',
@@ -47,15 +47,11 @@ const TOURISM_FILTERS = {
     ]
 };
 
-// --- State ---
+// --- Global State ---
 let map;
-let currentPolygon = null;
-let currentPolyline = null;
-let isDrawing = false;
-let drawnCoordinates = [];
-let allSpots = []; // Store fetched spots for client-side filtering
-let currentMarkers = []; // Store map markers
-let selectedMarker = null; // Single marker for the selected result
+let drawControl;
+let drawnItems;
+let allSpots = [];
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -64,217 +60,55 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initMap() {
-    // Default: Kyoto
+    // 1. Initialize Map (Kyoto Default)
     map = L.map('map').setView([34.9858, 135.7588], 13);
 
-    // Use colored OpenStreetMap tiles
-    // Use colored OpenStreetMap tiles
+    // 2. Tile Layer (OSM)
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
 
-    // Drawing Events (Mouse)
-    map.on('mousedown', onMapMouseDown);
-    map.on('mousemove', onMapMouseMove);
-    map.on('mouseup', onMapMouseUp);
+    // 3. Initialize Drawing (Leaflet.draw)
+    drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
 
-    // Drawing Events (Touch for Mobile)
-    const mapContainer = map.getContainer();
-    mapContainer.addEventListener('touchstart', onTouchStart, { passive: false });
-    mapContainer.addEventListener('touchmove', onTouchMove, { passive: false });
-    mapContainer.addEventListener('touchend', onTouchEnd);
-}
-
-// --- Touch Handling ---
-// --- Touch Handling ---
-function getLatLngFromTouch(touch) {
-    const rect = map.getContainer().getBoundingClientRect();
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
-    return map.containerPointToLatLng(L.point(x, y));
-}
-
-function onTouchStart(e) {
-    if (mode !== 'draw') return;
-    e.preventDefault();
-    if (e.touches.length === 0) return;
-
-    isDrawing = true;
-    const touch = e.touches[0];
-    const latlng = getLatLngFromTouch(touch);
-
-    drawnCoordinates = [latlng];
-
-    // Clear existing
-    if (currentPolygon) map.removeLayer(currentPolygon);
-    if (currentPolyline) map.removeLayer(currentPolyline);
-
-    currentPolyline = L.polyline(drawnCoordinates, { color: 'red', weight: 3 }).addTo(map);
-}
-
-function onTouchMove(e) {
-    if (mode !== 'draw' || !isDrawing) return;
-    e.preventDefault();
-    if (e.touches.length === 0) return;
-
-    const touch = e.touches[0];
-    const latlng = getLatLngFromTouch(touch);
-
-    drawnCoordinates.push(latlng);
-    currentPolyline.setLatLngs(drawnCoordinates);
-}
-
-function onTouchEnd(e) {
-    if (mode !== 'draw') return;
-    e.preventDefault();
-    onMapMouseUp({}); // Logic is state-based, so this is safe
-}
-
-
-// ... (UI Init Code Unchanged) ...
-
-// --- Drawing Logic ---
-// ... (Drawing Logic Unchanged) ...
-
-// --- API Logic ---
-
-async function searchSpots() {
-    console.log("Starting searchSpots...");
-
-    // Check if we have a valid search area
-    if (!currentPolygon && !currentPin) {
-        return;
-    }
-
-    const loader = document.getElementById('loader');
-    loader.classList.remove('hidden');
-
-    // 1. Get Selected Categories
-    const checkboxes = document.querySelectorAll('#category-list input:checked');
-    const selectedCats = Array.from(checkboxes).map(cb => cb.value);
-
-    if (selectedCats.length === 0) {
-        alert("カテゴリを選択してください");
-        loader.classList.add('hidden');
-        return;
-    }
-
-    // 2. Build Query
-    let queryParts = "";
-
-    try {
-        let areaFilter = "";
-
-        if (currentPin) {
-            // Radius Search
-            const ll = currentPin.getLatLng();
-            areaFilter = `(around:1000,${ll.lat},${ll.lng})`;
-        } else if (currentPolygon) {
-            // Polygon Search -> Switch to BBox for Stability
-            const latlngs = currentPolygon.getLatLngs()[0];
-            if (!latlngs || latlngs.length === 0) throw new Error("無効なエリアです");
-
-            // Calculate Bounding Box
-            let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
-            latlngs.forEach(ll => {
-                if (ll.lat < minLat) minLat = ll.lat;
-                if (ll.lat > maxLat) maxLat = ll.lat;
-                if (ll.lng < minLng) minLng = ll.lng;
-                if (ll.lng > maxLng) maxLng = ll.lng;
-            });
-
-            // Overpass BBox format: (south, west, north, east)
-            areaFilter = `(${minLat},${minLng},${maxLat},${maxLng})`;
-            console.log("Using BBox:", areaFilter);
+    drawControl = new L.Control.Draw({
+        draw: {
+            polyline: false,
+            polygon: true,
+            rectangle: true,
+            circle: false,
+            marker: false,
+            circlemarker: false
+        },
+        edit: {
+            featureGroup: drawnItems,
+            remove: true
         }
+    });
+    map.addControl(drawControl);
 
-        selectedCats.forEach(cat => {
-            if (TOURISM_FILTERS[cat]) {
-                TOURISM_FILTERS[cat].forEach(q => {
-                    queryParts += `${q}${areaFilter};\n`;
-                });
-            }
-        });
+    // 4. Event Listeners
+    map.on(L.Draw.Event.CREATED, function (e) {
+        // Clear previous drawings (User usually wants to search one area)
+        drawnItems.clearLayers();
 
-        // Use 'out center;' to keep it simple and light
-        const overpassQuery = `
-        [out:json][timeout:60];
-        (
-          ${queryParts}
-        );
-        out center;
-        `;
+        const layer = e.layer;
+        drawnItems.addLayer(layer);
 
-        console.log("Overpass Query constructed.");
-
-        // 60 sec timeout for fetch
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000);
-
-        const response = await fetch("https://overpass.kumi.systems/api/interpreter", {
-            method: "POST",
-            body: "data=" + encodeURIComponent(overpassQuery),
-            signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const elements = data.elements || [];
-
-        console.log("Found Elements:", elements.length);
-
-        // Deduplicate and process
-        const seen = new Set();
-        allSpots = [];
-
-        elements.forEach(el => {
-            // Filter by ID to ensure uniqueness
-            if (!seen.has(el.id)) {
-                seen.add(el.id);
-
-                // Center calculation for ways/relations
-                const lat = el.lat || el.center?.lat;
-                const lon = el.lon || el.center?.lon;
-
-                // Optional: Check if point is actually inside polygon?
-                // For now, let's just return all in BBox to ensure User sees SOMETHING.
-                // Precision can be improved later if needed.
-
-                if (lat && lon) {
-                    allSpots.push({
-                        ...el,
-                        lat: lat,
-                        lon: lon
-                    });
-                }
-            }
-        });
-
-        console.log("Processed Spots:", allSpots.length);
-
-        displayResults(allSpots);
-        document.getElementById('results-panel').classList.remove('hidden');
-
-    } catch (e) {
-        console.error("Search failed:", e);
-        if (e.name === 'AbortError') {
-            alert("検索がタイムアウトしました。範囲を狭めて試してください。");
-        } else {
-            alert("データ取得に失敗しました: " + e.message);
-        }
-    } finally {
-        loader.classList.add('hidden');
-    }
+        // Trigger Search immediately (or could be manual, but app.py implies reactive)
+        // Let's keep it manual via button or auto? 
+        // app.py says "mapの初期位置を更新" etc.
+        // Let's do it like app.py: Trigger search when drawing finishes?
+        // Actually app.py runs on re-render.
+        // Let's add a "Search this area" toast or just run it.
+        // For robustness, let's run it.
+        searchSpots(layer);
+    });
 }
 
 function initUI() {
-    // Populate Region Select
+    // Region Select
     const regionSelect = document.getElementById('region-select');
     Object.keys(REGIONS).forEach(key => {
         const option = document.createElement('option');
@@ -288,189 +122,213 @@ function initUI() {
         map.setView([coords[0], coords[1]], coords[2]);
     });
 
-    // Populate Category Checkboxes
-    const categoryList = document.getElementById('category-list');
+    // Categories
+    const catList = document.getElementById('category-list');
     Object.keys(TOURISM_FILTERS).forEach(key => {
         const div = document.createElement('div');
         div.className = 'checkbox-item';
-        div.innerHTML = `<input type="checkbox" value="${key}" checked> <label>${key}</label>`;
-        categoryList.appendChild(div);
+        div.innerHTML = `<label><input type="checkbox" value="${key}" checked> ${key}</label>`;
+        catList.appendChild(div);
     });
 
-    // Mode Toggles
-    document.getElementById('mode-pan').addEventListener('click', () => setMode('pan'));
-    document.getElementById('mode-draw').addEventListener('click', () => setMode('draw'));
-
-    // Mobile Menu Toggle
-    document.getElementById('mobile-menu-btn').addEventListener('click', () => {
-        document.querySelector('.sidebar').classList.toggle('open');
-    });
-
-    // Search Button
-    document.getElementById('search-btn').addEventListener('click', searchSpots);
-
-    // Filtering inputs
-    document.getElementById('filter-text').addEventListener('input', applyFilters);
-    document.getElementById('filter-web').addEventListener('change', applyFilters);
-    document.getElementById('filter-wiki').addEventListener('change', applyFilters);
-
-    // Close panel
+    // Close Results
     document.getElementById('close-results').addEventListener('click', () => {
         document.getElementById('results-panel').classList.add('hidden');
     });
+
+    // Filters (Client-side)
+    const applyFiltersBound = () => applyFilters(); // Function defined below
+    document.getElementById('filter-text').addEventListener('input', applyFiltersBound);
+    document.getElementById('filter-web').addEventListener('change', applyFiltersBound);
+    document.getElementById('filter-wiki').addEventListener('change', applyFiltersBound);
+    document.getElementById('filter-hours').addEventListener('change', applyFiltersBound);
 }
 
-let mode = 'pan'; // 'pan' or 'draw'
+// --- Search Logic (Ported from get_specialized_spots) ---
+async function searchSpots(layer) {
+    const statusMsg = document.getElementById('status-msg');
+    statusMsg.textContent = "検索中...";
 
-function setMode(newMode) {
-    mode = newMode;
-    document.getElementById('mode-pan').classList.toggle('active', mode === 'pan');
-    document.getElementById('mode-draw').classList.toggle('active', mode === 'draw');
+    // 1. Get Selected Categories
+    const checkboxes = document.querySelectorAll('#category-list input:checked');
+    const selectedCats = Array.from(checkboxes).map(cb => cb.value);
 
-    // Update hint text
-    const hint = document.getElementById('mode-hint');
-    if (hint) {
-        if (mode === 'pan') hint.textContent = "「移動」モード：地図をドラッグして移動します。";
-        if (mode === 'draw') hint.textContent = "「描く」モード：地図上をドラッグしてエリアを囲んでください。";
-    }
-
-    document.body.classList.remove('drawing-mode', 'pin-mode');
-
-    if (mode === 'draw') {
-        document.body.classList.add('drawing-mode');
-        map.dragging.disable();
-    } else {
-        map.dragging.enable();
-    }
-}
-
-function onMapMouseDown(e) {
-    if (mode !== 'draw') return;
-
-    isDrawing = true;
-    drawnCoordinates = [e.latlng]; // Start new line
-
-    // Remove existing shape if any
-    if (currentPolygon) map.removeLayer(currentPolygon);
-    if (currentPolyline) map.removeLayer(currentPolyline);
-
-    currentPolyline = L.polyline(drawnCoordinates, { color: 'red', weight: 3 }).addTo(map);
-}
-
-function onMapMouseMove(e) {
-    if (!isDrawing) return;
-
-    drawnCoordinates.push(e.latlng);
-    currentPolyline.setLatLngs(drawnCoordinates);
-}
-
-function onMapMouseUp(e) {
-    if (!isDrawing) return;
-
-    isDrawing = false;
-
-    // Convert polyline to polygon
-    if (currentPolyline) map.removeLayer(currentPolyline);
-
-    // Simplify? Leaflet doesn't have built-in simplify usually, but we can just use the points.
-    // Close the loop
-    currentPolygon = L.polygon(drawnCoordinates, {
-        color: '#ff4b4b',
-        fillColor: '#ff4b4b',
-        fillOpacity: 0.2
-    }).addTo(map);
-
-    // Enable search button (just in case)
-    document.getElementById('search-btn').disabled = false;
-
-    // Auto-search removed per user request
-    // searchSpots();
-}
-
-
-
-function displayResults(spots) {
-    const list = document.getElementById('results-list');
-    list.innerHTML = "";
-
-    document.getElementById('result-count').textContent = spots.length;
-
-    if (spots.length === 0) {
-        list.innerHTML = "<p style='text-align:center; padding:20px; color:#666;'>見つかりませんでした。</p>";
+    if (selectedCats.length === 0) {
+        alert("カテゴリを選択してください");
+        statusMsg.textContent = "";
         return;
     }
 
-    // Clear existing markers (though markers are disabled by default now, we clear any leftovers)
-    currentMarkers.forEach(m => map.removeLayer(m));
-    currentMarkers = [];
+    // 2. Build Area Filter
+    let areaFilter = "";
 
-    spots.forEach((spot, index) => {
-        const name = spot.tags.name;
-        // Determine subtype
-        let subtype = "スポット";
-        if (spot.tags.amenity) subtype = spot.tags.amenity;
-        else if (spot.tags.historic) subtype = spot.tags.historic;
-        else if (spot.tags.tourism) subtype = spot.tags.tourism;
+    // Robustness: Always use BBox if possible?
+    // app.py logic: if poly -> poly, if rect -> bbox.
+    // BUT fallback logic showed bbox.
+    // Let's try BBox first as user requested "Python made it work".
 
-        // Details
-        const details = [];
-        if (spot.tags.wikipedia) details.push("📖 Wiki");
-        if (spot.tags.website) details.push("🔗 HP");
-        if (spot.tags.opening_hours) details.push("🕒 時間");
+    // Get Bounds
+    const bounds = layer.getBounds();
+    // Overpass BBox: (south, west, north, east)
+    areaFilter = `(${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()})`;
 
-        const googleUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + " 観光")}`;
+    // Note: If we really want Polygon logic for polygons:
+    // we could check `if (layer instanceof L.Polygon && !(layer instanceof L.Rectangle))`
+    // But for now, BBox is safest.
 
-        // Create Card
-        const card = document.createElement('div');
-        card.className = "spot-card";
-        card.id = `card-${index}`;
-        card.innerHTML = `
-            <div class="spot-title">${name}</div>
-            <div class="spot-meta">
-                <span class="spot-tag">${subtype}</span>
-                <span class="spot-details">${details.join(' ')}</span>
-            </div>
-            <a href="${googleUrl}" target="_blank" class="google-btn">🌏 GoogleMap</a>
-        `;
+    // 3. Build Query
+    let queryParts = "";
+    selectedCats.forEach(cat => {
+        if (TOURISM_FILTERS[cat]) {
+            TOURISM_FILTERS[cat].forEach(q => {
+                queryParts += `${q}${areaFilter};\n`;
+            });
+        }
+    });
 
-        // Interaction: Click card to pan to map and show pin
-        card.addEventListener('click', (e) => {
-            if (e.target.tagName === 'A') return; // Ignore link clicks
+    const overpassQuery = `
+    [out:json][timeout:60];
+    (
+      ${queryParts}
+    );
+    // Keep only named items (Strict Port)
+    (._; >;);
+    out center body;
+    `;
 
-            // Highlight card
-            document.querySelectorAll('.spot-card').forEach(c => c.style.borderLeftColor = '#ff4b4b');
-            card.style.borderLeftColor = '#0066ff';
-
-            // Remove previous selection marker if any
-            if (selectedMarker) {
-                map.removeLayer(selectedMarker);
-            }
-
-            // Move map and add temporary marker
-            map.setView([spot.lat, spot.lon], 16);
-
-            selectedMarker = L.marker([spot.lat, spot.lon])
-                .addTo(map)
-                .bindPopup(`<b>${name}</b><br>${subtype}`)
-                .openPopup();
+    try {
+        const response = await fetch("https://overpass.kumi.systems/api/interpreter", {
+            method: "POST",
+            body: "data=" + encodeURIComponent(overpassQuery)
         });
 
-        list.appendChild(card);
+        if (!response.ok) throw new Error(response.status);
+
+        const data = await response.json();
+        const elements = data.elements || [];
+
+        // 4. Client-side Processing (Dedupe & Filter)
+        const seen = new Set();
+        allSpots = [];
+
+        elements.forEach(el => {
+            const tags = el.tags || {};
+            const name = tags.name;
+
+            // Strict Port: "name" must exist
+            if (!name) return;
+            if (seen.has(name)) return; // Simple name deduping
+
+            seen.add(name);
+
+            // Calc lat/lon
+            const lat = el.lat || el.center?.lat;
+            const lon = el.lon || el.center?.lon;
+
+            if (lat && lon) {
+                allSpots.push({ ...el, lat, lon });
+            }
+        });
+
+        statusMsg.textContent = `完了: ${allSpots.length}件`;
+        displayResults(allSpots);
+
+    } catch (e) {
+        console.error(e);
+        statusMsg.textContent = "エラーが発生しました";
+        alert("データ取得に失敗しました");
+    }
+}
+
+function displayResults(spots) {
+    const panel = document.getElementById('results-panel');
+    const list = document.getElementById('results-list');
+    const countSpan = document.getElementById('result-count');
+
+    panel.classList.remove('hidden');
+    list.innerHTML = "";
+    countSpan.textContent = spots.length;
+
+    if (spots.length === 0) {
+        list.innerHTML = "<p>見つかりませんでした。</p>";
+        return;
+    }
+
+    spots.forEach(spot => {
+        createCard(spot, list);
     });
 }
 
-function applyFilters() {
-    const textInfo = document.getElementById('filter-text').value.toLowerCase();
-    const checkWeb = document.getElementById('filter-web').checked;
-    const checkWiki = document.getElementById('filter-wiki').checked;
+function createCard(spot, container) {
+    const tags = spot.tags || {};
+    const name = tags.name;
 
-    const filtered = allSpots.filter(spot => {
-        const t = spot.tags;
-        if (textInfo && !t.name.toLowerCase().includes(textInfo)) return false;
-        if (checkWeb && !t.website) return false;
-        if (checkWiki && !t.wikipedia) return false;
-        return true;
+    // Subtype Logic
+    let subtype = "スポット";
+    if (tags.amenity) subtype = tags.amenity;
+    else if (tags.historic) subtype = tags.historic;
+    else if (tags.tourism) subtype = tags.tourism;
+    else if (tags.natural) subtype = tags.natural;
+
+    // Details String
+    const details = [];
+    if (tags.wikipedia) details.push("📖 Wiki");
+    if (tags.website) details.push("🔗 HP");
+    if (tags.opening_hours) details.push("🕒 時間");
+
+    const googleUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + " 観光")}`;
+
+    const card = document.createElement('div');
+    card.className = 'spot-card';
+    card.innerHTML = `
+        <div class="spot-title">${name}</div>
+        <div style="margin: 5px 0;">
+            <span class="spot-tag">${subtype}</span>
+            <span class="spot-details">${details.join(' ')}</span>
+        </div>
+        <a href="${googleUrl}" target="_blank" class="google-btn">🌏 Googleマップ</a>
+    `;
+
+    // Click to pan
+    card.addEventListener('click', (e) => {
+        if (e.target.tagName === 'A') return;
+        map.setView([spot.lat, spot.lon], 16);
+        L.popup()
+            .setLatLng([spot.lat, spot.lon])
+            .setContent(`<b>${name}</b>`)
+            .openOn(map);
     });
 
-    displayResults(filtered);
+    container.appendChild(card);
+}
+
+// --- Client-side Filtering ---
+function applyFilters() {
+    const text = document.getElementById('filter-text').value.toLowerCase();
+    const useWeb = document.getElementById('filter-web').checked;
+    const useWiki = document.getElementById('filter-wiki').checked;
+    const useHours = document.getElementById('filter-hours').checked;
+
+    const list = document.getElementById('results-list');
+    list.innerHTML = "";
+
+    let count = 0;
+
+    allSpots.forEach(spot => {
+        const tags = spot.tags || {};
+        const name = tags.name || "";
+
+        // 1. Text Search
+        if (text && !name.toLowerCase().includes(text)) return;
+
+        // 2. Attributes
+        if (useWeb && !tags.website) return;
+        if (useWiki && !tags.wikipedia) return;
+        if (useHours && !tags.opening_hours) return;
+
+        createCard(spot, list);
+        count++;
+    });
+
+    document.getElementById('result-count').textContent = count;
 }
