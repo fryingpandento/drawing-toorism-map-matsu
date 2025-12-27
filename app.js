@@ -181,12 +181,31 @@ let currentPolyline = null;
 let currentRect = null;
 let currentPolygon = null;
 
+
+// Helper to extract LatLng from Mouse or Touch events
+function getTouchLatLng(e) {
+    if (e.latlng) return e.latlng; // Mouse event from Leaflet
+
+    // Touch event (standard DOM event)
+    if (e.touches && e.touches.length > 0) {
+        const touch = e.touches[0];
+        // Convert client X/Y to Leaflet LatLng
+        return map.containerPointToLatLng([touch.clientX, touch.clientY]);
+    }
+    // Touch event (passed as Leaflet event wraps original)
+    if (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches.length > 0) {
+        const touch = e.originalEvent.touches[0];
+        return map.containerPointToLatLng([touch.clientX, touch.clientY]);
+    }
+    return null;
+}
+
 function startDraw(e) {
     if (!isDrawingMode()) return;
     isDrawing = true;
 
     // Support both mouse and touch events
-    const latlng = e.latlng || (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches[0] ? map.containerPointToLatLng([e.originalEvent.touches[0].clientX, e.originalEvent.touches[0].clientY]) : null);
+    const latlng = getTouchLatLng(e);
 
     if (!latlng) return;
 
@@ -207,7 +226,7 @@ function startDraw(e) {
 function moveDraw(e) {
     if (!isDrawing || !isDrawingMode()) return;
 
-    const latlng = e.latlng || (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches[0] ? map.containerPointToLatLng([e.originalEvent.touches[0].clientX, e.originalEvent.touches[0].clientY]) : null);
+    const latlng = getTouchLatLng(e);
 
     if (!latlng) return;
 
