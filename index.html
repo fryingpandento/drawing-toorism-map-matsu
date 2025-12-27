@@ -12,94 +12,22 @@
     <!-- Leaflet Draw CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
 
-    <link rel="stylesheet" href="style.css?v=FIX2">
+    <link rel="stylesheet" href="style.css?v=KANTO">
 </head>
 
 <body>
     <div id="app-container">
         <div id="sidebar">
             <h1>🗾 観光スポット探索 v2</h1>
+            <!-- ... content ... -->
 
-            <!-- Mode Toggle (Moved to Top for Visibility) -->
-            <div class="control-group"
-                style="margin-bottom: 15px; background: #eef; padding: 10px; border-radius: 8px;">
-                <label>① 操作モード</label>
-                <div style="display:flex; gap:10px; flex-wrap: wrap;">
-                    <button id="mode-pan" class="mode-btn active" onclick="setMode('pan')">✋ 移動</button>
-                    <button id="mode-draw" class="mode-btn" onclick="setMode('draw')">✏️ 自由</button>
-                    <button id="mode-box" class="mode-btn" onclick="setMode('box')">⬜ 四角</button>
-                    <button id="mode-radius" class="mode-btn" onclick="setMode('radius')">📍 周辺</button>
-                </div>
-                <p id="mode-hint" style="font-size:0.8em; color:#666; margin-top:5px;">
-                    地図をドラッグして移動します。
-                </p>
+            <!-- Leaflet JS -->
+            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
-                <!-- Radius Slider (Visible for Radius Mode) -->
-                <div id="radius-control" style="margin-top:10px; display:none;">
-                    <label style="font-size:0.9em; display:block; margin-bottom:5px;">
-                        半径: <span id="radius-val">3km</span>
-                    </label>
-                    <input type="range" id="radius-select" min="500" max="10000" step="500" value="3000"
-                        style="width:100%;">
-                    <div style="display:flex; justify-content:space-between; font-size:0.8em; color:#666;">
-                        <span>500m</span>
-                        <span>10km</span>
-                    </div>
-                </div>
-            </div>
+            <!-- Leaflet Draw JS -->
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 
-            <div class="control-group">
-                <label for="region-select">② 地方を選択 (初期位置)</label>
-                <select id="region-select"></select>
-            </div>
-
-            <p class="description">
-                地図上の描画ボタン（四角形や多角形）を使って範囲を囲むと、そのエリアのディープな観光地を抽出します。
-            </p>
-
-            <div class="control-group">
-                <label>カテゴリ選択</label>
-                <div id="category-list">
-                    <!-- Checkboxes injected by JS -->
-                </div>
-            </div>
-
-            <div id="status-msg"></div>
-        </div>
-
-        <div id="main-content">
-            <div id="map"></div>
-
-            <div id="results-panel" class="hidden">
-                <div class="results-header">
-                    <h2>🔎 探索結果 (<span id="result-count">0</span>)</h2>
-                    <button id="close-results">×</button>
-                </div>
-
-                <div class="filter-controls">
-                    <input type="text" id="filter-text" placeholder="名前で絞り込み (例: 神社)...">
-                    <div class="filter-checks">
-                        <label><input type="checkbox" id="filter-web"> 公式HPあり</label>
-                        <label><input type="checkbox" id="filter-wiki"> Wikiあり</label>
-                        <label><input type="checkbox" id="filter-hours"> 時間情報あり</label>
-                    </div>
-                </div>
-
-                <div id="results-list">
-                    <!-- Cards injected by JS -->
-                    <div class="placeholder">検索結果がここに表示されます</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-
-    <!-- Leaflet Draw JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
-
-    <script src="app.js?v=FIX2"></script>
+            <script src="app.js?v=KANTO"></script>
 </body>
 
 </html>
