@@ -55,13 +55,20 @@ let allSpots = [];
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-    initMap();
+    const mapElement = document.getElementById('map');
+    if (!mapElement) {
+        alert('CRITICAL: Map container element (#map) NOT found in DOM. HTML structure might be broken.');
+        console.error('Map container not found');
+        return;
+    }
+    initMap(mapElement);
     initUI();
 });
 
-function initMap() {
+function initMap(mapElement) {
     // 1. Initialize Map (Kanto Default)
-    map = L.map('map', {
+    // Pass the element directly to avoid "Map container not found"
+    map = L.map(mapElement, {
         dragging: true, // Default enabled
         tap: true
     }).setView([35.6895, 139.6917], 10);
