@@ -83,16 +83,16 @@ function initMap() {
 function onMapClick(e) {
     if (mode !== 'pin') return;
 
-    // Clear previous search area
-    if (currentPin) map.removeLayer(currentPin);
+    // Clear previous search area (just logic, no visual circle needed)
+    if (currentPin) {
+        // map.removeLayer(currentPin); // No circle to remove anymore
+        currentPin = null;
+    }
     if (currentPolygon) { map.removeLayer(currentPolygon); currentPolygon = null; }
 
-    currentPin = L.circle(e.latlng, {
-        color: '#ff4b4b',
-        fillColor: '#ff4b4b',
-        fillOpacity: 0.2,
-        radius: 1000 // 1km
-    }).addTo(map);
+    // We used to draw a circle here. Now we just search.
+    // Store simple point for query logic (simulating the pin object for searchSpots)
+    currentPin = e.latlng;
 
     // Auto search on pin drop
     searchSpots(e.latlng);
@@ -155,9 +155,15 @@ function initUI() {
     // Mode Toggles
     document.getElementById('mode-pan').addEventListener('click', () => setMode('pan'));
     document.getElementById('mode-draw').addEventListener('click', () => setMode('draw'));
+    document.getElementById('mode-pin').addEventListener('click', () => setMode('pin'));
+
+    // Mobile Menu Toggle
+    document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+        document.querySelector('.sidebar').classList.toggle('open');
+    });
 
     // Search Button
-    document.getElementById('search-btn').addEventListener('click', searchSpots);
+    document.getElementById('search-btn').addEventListener('click', () => searchSpots(null));
 
     // Filtering inputs
     document.getElementById('filter-text').addEventListener('input', applyFilters);
@@ -176,16 +182,25 @@ function setMode(newMode) {
     mode = newMode;
     document.getElementById('mode-pan').classList.toggle('active', mode === 'pan');
     document.getElementById('mode-draw').classList.toggle('active', mode === 'draw');
+    document.getElementById('mode-pin').classList.toggle('active', mode === 'pin');
 
-    // Toggle map dragging based on mode? No, drag needed for panning.
-    // Actually, in 'draw' mode, we disable map dragging when the mouse is down.
+    // Update hint text
+    const hint = document.getElementById('mode-hint');
+    if (hint) {
+        if (mode === 'pan') hint.textContent = "「移動」モード：地図をドラッグして移動します。";
+        if (mode === 'draw') hint.textContent = "「描く」モード：地図上をドラッグしてエリアを囲んでください。";
+        if (mode === 'pin') hint.textContent = "「ピン」モード：地図をタップして周辺1kmを検索します。";
+    }
+
+    document.body.classList.remove('drawing-mode', 'pin-mode');
 
     if (mode === 'draw') {
         document.body.classList.add('drawing-mode');
-        map.dragging.disable(); // Disable map drag entirely in draw mode for easier drawing?
-        // Better: disable dragging only while drawing (mousedown). But for UX, static map is better for drawing.
+        map.dragging.disable();
+    } else if (mode === 'pin') {
+        document.body.classList.add('pin-mode');
+        map.dragging.enable();
     } else {
-        document.body.classList.remove('drawing-mode');
         map.dragging.enable();
     }
 }
@@ -258,10 +273,19 @@ async function searchSpots(centerLatLng = null) {
         if (TOURISM_FILTERS[cat]) {
             TOURISM_FILTERS[cat].forEach(q => {
                 // Add spatial filter
-                if (currentPin || (centerLatLng && centerLatLng.lat)) {
+                const target = centerLatLng || currentPin;
+
+                if (target) {
                     // Radius Search (around:1000, lat, lon)
-                    const lat = centerLatLng.lat || currentPin.getLatLng().lat;
-                    const lng = centerLatLng.lng || currentPin.getLatLng().lng;
+                    let lat, lng;
+                    if (typeof target.getLatLng === 'function') {
+                        const ll = target.getLatLng();
+                        lat = ll.lat;
+                        lng = ll.lng;
+                    } else {
+                        lat = target.lat;
+                        lng = target.lng;
+                    }
                     queryParts += `${q}(around:1000,${lat},${lng});\n`;
                 } else if (currentPolygon) {
                     // Polygon Search
