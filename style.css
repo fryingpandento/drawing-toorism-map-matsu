@@ -266,3 +266,20 @@ select {
         height: auto;
     }
 }
+
+/* Mode Buttons */
+.mode-btn {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ccc;
+    background: #fff;
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.mode-btn.active {
+    background: #ff4b4b;
+    color: white;
+    border-color: #ff4b4b;
+}
