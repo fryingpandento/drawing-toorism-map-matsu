@@ -158,12 +158,15 @@ async function searchSpots() {
     // 2. Build Query
     let queryParts = "";
 
+    // Simplify polygon for performance
+    const rawLatLngs = currentPolygon.getLatLngs()[0];
+    const simplifiedLatLngs = simplifyLatLngs(rawLatLngs, 0.0001); // Approx 10m
+    const polyStr = simplifiedLatLngs.map(ll => `${ll.lat} ${ll.lng}`).join(' ');
+
     selectedCats.forEach(cat => {
         if (TOURISM_FILTERS[cat]) {
             TOURISM_FILTERS[cat].forEach(q => {
                 // Polygon Search
-                const latlngs = currentPolygon.getLatLngs()[0];
-                const polyStr = latlngs.map(ll => `${ll.lat} ${ll.lng}`).join(' ');
                 queryParts += `${q}(poly:"${polyStr}");\n`;
             });
         }
@@ -439,7 +442,30 @@ async function searchSpots(centerLatLng = null) {
     }
 }
 
-// --- Results & Display ---
+// --- Utils ---
+function simplifyLatLngs(latlngs, tolerance) {
+    if (latlngs.length <= 2) return latlngs;
+
+    const simplified = [latlngs[0]];
+    let lastPoint = latlngs[0];
+
+    for (let i = 1; i < latlngs.length; i++) {
+        const point = latlngs[i];
+        // Simple distance check (squared Euclidean distance for speed)
+        const dx = point.lat - lastPoint.lat;
+        const dy = point.lng - lastPoint.lng;
+        // 0.0001 degrees is roughly 11 meters. tolerance squared.
+        if ((dx * dx + dy * dy) > (tolerance * tolerance)) {
+            simplified.push(point);
+            lastPoint = point;
+        }
+    }
+    // Always include the last point to close the polygon correctly (or nearly correctly)
+    simplified.push(latlngs[latlngs.length - 1]);
+
+    return simplified;
+}
+
 function displayResults(spots) {
     const list = document.getElementById('results-list');
     list.innerHTML = "";
