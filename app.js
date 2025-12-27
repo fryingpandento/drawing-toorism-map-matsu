@@ -329,10 +329,11 @@ function onMapMouseUp(e) {
         fillOpacity: 0.2
     }).addTo(map);
 
-    // Enable search button
+    // Enable search button (just in case)
     document.getElementById('search-btn').disabled = false;
 
-    // If we disabled dragging globally, re-enable? No, kept it disabled in 'draw' mode.
+    // Auto-search for better UX (especially on mobile where sidebar is hidden)
+    searchSpots();
 }
 
 // --- API Logic ---
