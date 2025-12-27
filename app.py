@@ -54,15 +54,24 @@ TOURISM_FILTERS = {
     ]
 }
 
-def get_specialized_spots(bbox, selected_categories):
+def get_specialized_spots(search_area, selected_categories):
     if not selected_categories:
         return []
+
+    # 検索エリアフィルタの作成
+    area_filter = ""
+    if search_area['type'] == 'bbox':
+        bbox = search_area['value']
+        area_filter = f"({bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]})"
+    elif search_area['type'] == 'poly':
+        poly_coords = search_area['value']
+        area_filter = f'(poly:"{poly_coords}")'
 
     query_parts = ""
     for category in selected_categories:
         if category in TOURISM_FILTERS:
             for q in TOURISM_FILTERS[category]:
-                query_parts += f'{q}({bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]});\n'
+                query_parts += f'{q}{area_filter};\n'
 
     # 観光地の名前(name)があるものだけに限定してノイズを減らす
     # Main instance is 504ing, switching to Kumi Systems mirror
@@ -180,13 +189,26 @@ def main():
                 st.warning("カテゴリを選択してください。")
             else:
                 geometry = output['last_active_drawing']['geometry']
-                coords = geometry['coordinates'][0]
-                lons = [p[0] for p in coords]
-                lats = [p[1] for p in coords]
-                bbox = [min(lats), min(lons), max(lats), max(lons)]
+                search_area = {}
+
+                # 描画タイプに応じて検索範囲を定義
+                if geometry['type'] == 'Polygon':
+                    # Overpass APIのpolyフィルタ用に "lat lon lat lon ..." の形式に変換
+                    # GeoJSONは [lon, lat] なので順序を入れ替える
+                    coords = geometry['coordinates'][0]
+                    poly_str = " ".join([f"{p[1]} {p[0]}" for p in coords])
+                    search_area = {'type': 'poly', 'value': poly_str}
+                else:
+                    # その他の形状の場合（念のためフォールバック）
+                    # 矩形範囲を計算してbbox検索
+                    coords = geometry['coordinates'][0] # Polygon前提だが念の為
+                    lons = [p[0] for p in coords]
+                    lats = [p[1] for p in coords]
+                    bbox = [min(lats), min(lons), max(lats), max(lons)]
+                    search_area = {'type': 'bbox', 'value': bbox}
 
                 with st.spinner("ディープなスポットを収集中..."):
-                    raw_spots = get_specialized_spots(bbox, selected_cats)
+                    raw_spots = get_specialized_spots(search_area, selected_cats)
                     
                     # データの重複排除と整理
                     seen_names = set()

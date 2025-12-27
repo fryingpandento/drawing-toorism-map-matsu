@@ -1,0 +1,387 @@
+// --- Constants ---
+const REGIONS = {
+    "今いる場所 (デフォルト)": [34.9858, 135.7588, 13],
+    "北海道 (札幌)": [43.0618, 141.3545, 10],
+    "東北 (仙台)": [38.2682, 140.8694, 10],
+    "関東 (東京)": [35.6895, 139.6917, 10],
+    "中部 (名古屋)": [35.1815, 136.9066, 10],
+    "近畿 (大阪)": [34.6937, 135.5023, 10],
+    "中国 (広島)": [34.3853, 132.4553, 10],
+    "四国 (高松)": [34.3428, 134.0466, 10],
+    "九州 (福岡)": [33.5904, 130.4017, 10],
+    "沖縄 (那覇)": [26.2124, 127.6809, 10]
+};
+
+const TOURISM_FILTERS = {
+    "📸 絶景・自然": [
+        'node["tourism"="viewpoint"]',      // 展望台
+        'node["natural"="peak"]',          // 山頂
+        'node["waterway"="waterfall"]',     // 滝
+        'node["natural"="beach"]',         // ビーチ
+        'way["natural"="beach"]',
+        'node["leisure"="park"]'           // 公園
+    ],
+    "⛩️ 歴史・神社仏閣": [
+        'node["historic"~"castle|ruins|memorial|monument"]', // 城・遺跡・記念碑
+        'way["historic"~"castle|ruins"]',
+        'node["amenity"="place_of_worship"]', // 神社・寺院・教会
+        'way["amenity"="place_of_worship"]',
+        'node["historic"="wayside_shrine"]'   // 道端の祠
+    ],
+    "🎨 芸術・博物館": [
+        'node["tourism"="museum"]',        // 博物館・美術館
+        'node["tourism"="artwork"]',       // アート作品・像
+        'node["tourism"="gallery"]',
+        'way["tourism"="museum"]'
+    ],
+    "♨️ 温泉・リラックス": [
+        'node["amenity"="public_bath"]',   // 銭湯・温泉
+        'node["natural"="hot_spring"]',    // 源泉
+        'node["tourism"="hotel"]'          // 宿泊
+    ],
+    "🎡 エンタメ・体験": [
+        'node["tourism"="theme_park"]',
+        'node["tourism"="zoo"]',
+        'node["tourism"="aquarium"]',
+        'node["leisure"="resort"]'
+    ]
+};
+
+// --- State ---
+let map;
+let currentPolygon = null;
+let currentPolyline = null;
+let isDrawing = false;
+let drawnCoordinates = [];
+let allSpots = []; // Store fetched spots for client-side filtering
+let currentMarkers = []; // Store map markers
+
+// --- Initialization ---
+document.addEventListener('DOMContentLoaded', () => {
+    initMap();
+    initUI();
+});
+
+function initMap() {
+    // Default: Kyoto
+    map = L.map('map').setView([34.9858, 135.7588], 13);
+
+    // Use colored OpenStreetMap tiles
+    // Use colored OpenStreetMap tiles
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+    }).addTo(map);
+
+    // Drawing Events
+    map.on('mousedown', onMapMouseDown);
+    map.on('mousemove', onMapMouseMove);
+    map.on('mouseup', onMapMouseUp);
+}
+
+// ... (UI Init Code Unchanged) ...
+
+// --- Drawing Logic ---
+// ... (Drawing Logic Unchanged) ...
+
+// --- API Logic ---
+
+async function searchSpots() {
+    if (!currentPolygon) return;
+
+    // Clear old markers
+    currentMarkers.forEach(m => map.removeLayer(m));
+    currentMarkers = [];
+
+    const loader = document.getElementById('loader');
+    loader.classList.remove('hidden');
+
+    // ... (Category and Query Logic Unchanged) ...
+    // Note: I need to verify if I can skip the middle part of this function in replace_file_content
+    // If not, I should use multi_replace or include the context.
+    // Since this is a big function, I will target specific blocks if possible, but the user asked for interaction which implies connecting list to map.
+    // I need to update 'displayResults' mostly.
+
+    // Let's focus on changing the tile layer first, then the displayResults function.
+    // I will restart the tool call to do it in two chunks or one multi_replace.
+}
+
+function initUI() {
+    // Populate Region Select
+    const regionSelect = document.getElementById('region-select');
+    Object.keys(REGIONS).forEach(key => {
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = key;
+        regionSelect.appendChild(option);
+    });
+
+    regionSelect.addEventListener('change', (e) => {
+        const coords = REGIONS[e.target.value];
+        map.setView([coords[0], coords[1]], coords[2]);
+    });
+
+    // Populate Category Checkboxes
+    const categoryList = document.getElementById('category-list');
+    Object.keys(TOURISM_FILTERS).forEach(key => {
+        const div = document.createElement('div');
+        div.className = 'checkbox-item';
+        div.innerHTML = `<input type="checkbox" value="${key}" checked> <label>${key}</label>`;
+        categoryList.appendChild(div);
+    });
+
+    // Mode Toggles
+    document.getElementById('mode-pan').addEventListener('click', () => setMode('pan'));
+    document.getElementById('mode-draw').addEventListener('click', () => setMode('draw'));
+
+    // Search Button
+    document.getElementById('search-btn').addEventListener('click', searchSpots);
+
+    // Filtering inputs
+    document.getElementById('filter-text').addEventListener('input', applyFilters);
+    document.getElementById('filter-web').addEventListener('change', applyFilters);
+    document.getElementById('filter-wiki').addEventListener('change', applyFilters);
+
+    // Close panel
+    document.getElementById('close-results').addEventListener('click', () => {
+        document.getElementById('results-panel').classList.add('hidden');
+    });
+}
+
+let mode = 'pan'; // 'pan' or 'draw'
+
+function setMode(newMode) {
+    mode = newMode;
+    document.getElementById('mode-pan').classList.toggle('active', mode === 'pan');
+    document.getElementById('mode-draw').classList.toggle('active', mode === 'draw');
+
+    // Toggle map dragging based on mode? No, drag needed for panning.
+    // Actually, in 'draw' mode, we disable map dragging when the mouse is down.
+
+    if (mode === 'draw') {
+        document.body.classList.add('drawing-mode');
+        map.dragging.disable(); // Disable map drag entirely in draw mode for easier drawing?
+        // Better: disable dragging only while drawing (mousedown). But for UX, static map is better for drawing.
+    } else {
+        document.body.classList.remove('drawing-mode');
+        map.dragging.enable();
+    }
+}
+
+function onMapMouseDown(e) {
+    if (mode !== 'draw') return;
+
+    isDrawing = true;
+    drawnCoordinates = [e.latlng]; // Start new line
+
+    // Remove existing shape if any
+    if (currentPolygon) map.removeLayer(currentPolygon);
+    if (currentPolyline) map.removeLayer(currentPolyline);
+
+    currentPolyline = L.polyline(drawnCoordinates, { color: 'red', weight: 3 }).addTo(map);
+}
+
+function onMapMouseMove(e) {
+    if (!isDrawing) return;
+
+    drawnCoordinates.push(e.latlng);
+    currentPolyline.setLatLngs(drawnCoordinates);
+}
+
+function onMapMouseUp(e) {
+    if (!isDrawing) return;
+
+    isDrawing = false;
+
+    // Convert polyline to polygon
+    if (currentPolyline) map.removeLayer(currentPolyline);
+
+    // Simplify? Leaflet doesn't have built-in simplify usually, but we can just use the points.
+    // Close the loop
+    currentPolygon = L.polygon(drawnCoordinates, {
+        color: '#ff4b4b',
+        fillColor: '#ff4b4b',
+        fillOpacity: 0.2
+    }).addTo(map);
+
+    // Enable search button
+    document.getElementById('search-btn').disabled = false;
+
+    // If we disabled dragging globally, re-enable? No, kept it disabled in 'draw' mode.
+}
+
+// --- API Logic ---
+async function searchSpots() {
+    if (!currentPolygon) return;
+
+    const loader = document.getElementById('loader');
+    loader.classList.remove('hidden');
+
+    // 1. Get Selected Categories
+    const checkboxes = document.querySelectorAll('#category-list input:checked');
+    const selectedCats = Array.from(checkboxes).map(cb => cb.value);
+
+    if (selectedCats.length === 0) {
+        alert("カテゴリを選択してください");
+        loader.classList.add('hidden');
+        return;
+    }
+
+    // 2. Build Poly String for Overpass
+    // Overpass expects: "lat1 lon1 lat2 lon2 ..."
+    const latlngs = currentPolygon.getLatLngs()[0]; // Outer ring
+    const polyStr = latlngs.map(ll => `${ll.lat} ${ll.lng}`).join(' ');
+
+    // 3. Build Query
+    let queryParts = "";
+    selectedCats.forEach(cat => {
+        if (TOURISM_FILTERS[cat]) {
+            TOURISM_FILTERS[cat].forEach(q => {
+                // Replace 'query' type with filter
+                // e.g. node["tourism"] -> node["tourism"](poly:"...")
+                // Note: JS strings are single quoted in definitions above, simplified parsing:
+                queryParts += `${q}(poly:"${polyStr}");\n`;
+            });
+        }
+    });
+
+    const overpassQuery = `
+    [out:json][timeout:60];
+    (
+      ${queryParts}
+    );
+    // Keep only named items
+    (._; >;);
+    out center body;
+    `;
+
+    try {
+        const response = await fetch("https://overpass.kumi.systems/api/interpreter", {
+            method: "POST",
+            body: "data=" + encodeURIComponent(overpassQuery)
+        });
+
+        if (!response.ok) throw new Error("API Error");
+
+        const data = await response.json();
+        const elements = data.elements || [];
+
+        // Deduplicate and process
+        const seen = new Set();
+        allSpots = [];
+
+        elements.forEach(el => {
+            if (el.tags && el.tags.name && !seen.has(el.tags.name)) {
+                seen.add(el.tags.name);
+                // Center calculation for ways/relations
+                const lat = el.lat || el.center?.lat;
+                const lon = el.lon || el.center?.lon;
+
+                if (lat && lon) {
+                    allSpots.push({
+                        ...el,
+                        lat: lat,
+                        lon: lon
+                    });
+                }
+            }
+        });
+
+        displayResults(allSpots);
+        document.getElementById('results-panel').classList.remove('hidden');
+
+    } catch (e) {
+        console.error(e);
+        alert("データ取得に失敗しました。");
+    } finally {
+        loader.classList.add('hidden');
+    }
+}
+
+// --- Results & Display ---
+function displayResults(spots) {
+    const list = document.getElementById('results-list');
+    list.innerHTML = "";
+
+    document.getElementById('result-count').textContent = spots.length;
+
+    if (spots.length === 0) {
+        list.innerHTML = "<p style='text-align:center; padding:20px; color:#666;'>見つかりませんでした。</p>";
+        return;
+    }
+
+    // Clear existing markers
+    currentMarkers.forEach(m => map.removeLayer(m));
+    currentMarkers = [];
+
+    spots.forEach((spot, index) => {
+        const name = spot.tags.name;
+        // Determine subtype
+        let subtype = "スポット";
+        if (spot.tags.amenity) subtype = spot.tags.amenity;
+        else if (spot.tags.historic) subtype = spot.tags.historic;
+        else if (spot.tags.tourism) subtype = spot.tags.tourism;
+
+        // Details
+        const details = [];
+        if (spot.tags.wikipedia) details.push("📖 Wiki");
+        if (spot.tags.website) details.push("🔗 HP");
+        if (spot.tags.opening_hours) details.push("🕒 時間");
+
+        const googleUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + " 観光")}`;
+
+        // Create Card
+        const card = document.createElement('div');
+        card.className = "spot-card";
+        card.id = `card-${index}`;
+        card.innerHTML = `
+            <div class="spot-title">${name}</div>
+            <div class="spot-meta">
+                <span class="spot-tag">${subtype}</span>
+                <span class="spot-details">${details.join(' ')}</span>
+            </div>
+            <a href="${googleUrl}" target="_blank" class="google-btn">🌏 GoogleMap</a>
+        `;
+
+        // Interaction: Click card to pan to map
+        card.addEventListener('click', (e) => {
+            if (e.target.tagName === 'A') return; // Ignore link clicks
+
+            // Highlight card
+            document.querySelectorAll('.spot-card').forEach(c => c.style.borderLeftColor = '#ff4b4b');
+            card.style.borderLeftColor = '#0066ff';
+
+            // Move map and open popup
+            const marker = currentMarkers[index];
+            if (marker) {
+                map.setView(marker.getLatLng(), 16);
+                marker.openPopup();
+            }
+        });
+
+        list.appendChild(card);
+
+        // Add marker to map
+        const marker = L.marker([spot.lat, spot.lon])
+            .addTo(map)
+            .bindPopup(`<b>${name}</b><br>${subtype}`);
+
+        currentMarkers.push(marker);
+    });
+}
+
+function applyFilters() {
+    const textInfo = document.getElementById('filter-text').value.toLowerCase();
+    const checkWeb = document.getElementById('filter-web').checked;
+    const checkWiki = document.getElementById('filter-wiki').checked;
+
+    const filtered = allSpots.filter(spot => {
+        const t = spot.tags;
+        if (textInfo && !t.name.toLowerCase().includes(textInfo)) return false;
+        if (checkWeb && !t.website) return false;
+        if (checkWiki && !t.wikipedia) return false;
+        return true;
+    });
+
+    displayResults(filtered);
+}

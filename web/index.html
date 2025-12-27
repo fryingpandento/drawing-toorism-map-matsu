@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Tourism Map - JS Version</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="header">
+                <h1>Deep Tourism Map</h1>
+                <p class="subtitle">ディープな観光地を「手書き」で探す</p>
+            </div>
+
+            <!-- Region Selection -->
+            <div class="control-group">
+                <label><i class="fa-solid fa-map-location-dot"></i> 地方を選択 (初期位置)</label>
+                <select id="region-select">
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+
+            <!-- Drawing Tool Toggle -->
+            <div class="control-group drawing-section">
+                <label>🖊️ エリア指定</label>
+                <div class="toggle-switch">
+                    <button id="mode-pan" class="active" title="地図を移動"><i class="fa-solid fa-hand"></i> 移動</button>
+                    <button id="mode-draw" title="フリーハンドで描画"><i class="fa-solid fa-pen-nib"></i> 描く</button>
+                </div>
+                <p class="hint">「描く」を選択して、地図上をドラッグして囲んでください。</p>
+            </div>
+
+            <!-- Category Selection -->
+            <div class="control-group">
+                <label><i class="fa-solid fa-tags"></i> カテゴリ選択</label>
+                <div id="category-list" class="checkbox-list">
+                    <!-- Checkboxes populated by JS -->
+                </div>
+            </div>
+
+            <!-- Search Button -->
+            <button id="search-btn" class="primary-btn" disabled>
+                <i class="fa-solid fa-magnifying-glass"></i> エリア内を検索
+            </button>
+
+            <!-- Loading Indicator -->
+            <div id="loader" class="loader hidden">
+                <div class="spinner"></div>
+                <span>スポットを収集中...</span>
+            </div>
+            
+        </div>
+
+        <!-- Main Map Area -->
+        <div class="main-content">
+            <div id="map"></div>
+            
+            <!-- Result Panel (Slide-over or Bottom sheet style) -->
+            <div id="results-panel" class="results-panel hidden">
+                <div class="results-header">
+                    <h2><span id="result-count">0</span> lights found</h2>
+                    
+                    <!-- Filters -->
+                    <div class="filters">
+                        <div class="search-input">
+                            <i class="fa-solid fa-search"></i>
+                            <input type="text" id="filter-text" placeholder="名前で絞り込み...">
+                        </div>
+                        <div class="filter-tags">
+                            <label><input type="checkbox" id="filter-web"> 🔗 HPあり</label>
+                            <label><input type="checkbox" id="filter-wiki"> 📖 Wikiあり</label>
+                        </div>
+                    </div>
+                    <button id="close-results"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div id="results-list" class="results-list">
+                    <!-- Cards populated by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- App Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
