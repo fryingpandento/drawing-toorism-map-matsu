@@ -295,6 +295,28 @@ input[type=range]::-moz-range-track {
     display: none;
 }
 
+/* Status Message (Floating) */
+#status-msg {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3000;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+    transition: opacity 0.3s;
+    text-align: center;
+}
+
+#status-msg:empty {
+    display: none;
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
     #app-container {
