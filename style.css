@@ -283,6 +283,32 @@ select {
         order: 1;
     }
 
+    /* Floating Status Message on Mobile */
+    #status-msg {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 3000;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 20px;
+        font-weight: bold;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        pointer-events: none;
+        /* Let clicks pass through */
+        transition: opacity 0.3s;
+        text-align: center;
+        width: auto;
+        max-width: 90%;
+        font-size: 0.9rem;
+    }
+
+    #status-msg:empty {
+        display: none;
+    }
+
     #results-panel {
         width: 90%;
         left: 5%;
