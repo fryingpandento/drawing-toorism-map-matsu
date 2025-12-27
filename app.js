@@ -396,11 +396,32 @@ function createCard(spot, container) {
     else if (tags.tourism) subtype = tags.tourism;
     else if (tags.natural) subtype = tags.natural;
 
-    // Details String
-    const details = [];
-    if (tags.wikipedia) details.push("📖 Wiki");
-    if (tags.website) details.push("🔗 HP");
-    if (tags.opening_hours) details.push("🕒 時間");
+    // Details Elements
+    const detailsHtml = [];
+
+    // Wikipedia Link
+    if (tags.wikipedia) {
+        let wikiUrl = tags.wikipedia;
+        if (!wikiUrl.startsWith('http')) {
+            const parts = wikiUrl.split(':');
+            if (parts.length === 2) {
+                wikiUrl = `https://${parts[0]}.wikipedia.org/wiki/${parts[1]}`;
+            } else {
+                wikiUrl = `https://ja.wikipedia.org/wiki/${wikiUrl}`;
+            }
+        }
+        detailsHtml.push(`<a href="${wikiUrl}" target="_blank" style="margin-right:5px; text-decoration:none;">📖 Wiki</a>`);
+    }
+
+    // Website Link
+    if (tags.website) {
+        detailsHtml.push(`<a href="${tags.website}" target="_blank" style="margin-right:5px; text-decoration:none;">🔗 HP</a>`);
+    }
+
+    // Hours (Tooltip)
+    if (tags.opening_hours) {
+        detailsHtml.push(`<span title="${tags.opening_hours}" style="cursor:help;">🕒 時間</span>`);
+    }
 
     const googleUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + " 観光")}`;
 
@@ -410,14 +431,15 @@ function createCard(spot, container) {
         <div class="spot-title">${name}</div>
         <div style="margin: 5px 0;">
             <span class="spot-tag">${subtype}</span>
-            <span class="spot-details">${details.join(' ')}</span>
+            <span class="spot-details">${detailsHtml.join(' ')}</span>
         </div>
         <a href="${googleUrl}" target="_blank" class="google-btn">🌏 Googleマップ</a>
     `;
 
     // Click to pan
     card.addEventListener('click', (e) => {
-        if (e.target.tagName === 'A') return;
+        // Prevent pan if clicking a link or the Google Map button (which also has tag A or class google-btn)
+        if (e.target.tagName === 'A' || e.target.closest('a')) return;
         map.setView([spot.lat, spot.lon], 16);
         L.popup()
             .setLatLng([spot.lat, spot.lon])
