@@ -86,19 +86,33 @@ function initMap() {
 }
 
 // --- Touch Handling ---
+// --- Touch Handling ---
+function getParamsFromTouch(touch) {
+    // Manually construct a point to avoid event object discrepancies
+    const containerPoint = map.mouseEventToContainerPoint({
+        clientX: touch.clientX,
+        clientY: touch.clientY
+    });
+    return map.containerPointToLatLng(containerPoint);
+}
+
 function onTouchStart(e) {
     if (mode !== 'draw') return;
-    e.preventDefault(); // Prevent scrolling
+    e.preventDefault();
+    if (e.touches.length === 0) return;
+
     const touch = e.touches[0];
-    const latlng = map.mouseEventToLatLng(touch);
+    const latlng = getParamsFromTouch(touch);
     onMapMouseDown({ latlng: latlng });
 }
 
 function onTouchMove(e) {
     if (mode !== 'draw' || !isDrawing) return;
-    e.preventDefault(); // Prevent scrolling
+    e.preventDefault();
+    if (e.touches.length === 0) return;
+
     const touch = e.touches[0];
-    const latlng = map.mouseEventToLatLng(touch);
+    const latlng = getParamsFromTouch(touch);
     onMapMouseMove({ latlng: latlng });
 }
 
