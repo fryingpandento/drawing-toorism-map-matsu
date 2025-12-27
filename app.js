@@ -160,11 +160,42 @@ async function searchSpots() {
     let queryParts = "";
 
     try {
-        // Use raw polygon for maximum accuracy (reverted simplification)
+        // Use raw polygon but filter dense points to prevent query overflow
         const latlngs = currentPolygon.getLatLngs()[0];
         if (!latlngs || latlngs.length === 0) throw new Error("無効なエリアです");
 
-        const polyStr = latlngs.map(ll => `${ll.lat} ${ll.lng}`).join(' ');
+        // Filter: Keep point only if it's > 5m-10m away from the last one (approx 0.0001 deg)
+        // Also ensure we keep enough points to form a polygon
+        const filteredLatLngs = [latlngs[0]];
+        let lastPt = latlngs[0];
+        const distSqLimit = 0.00005 * 0.00005;
+
+        for (let i = 1; i < latlngs.length; i++) {
+            const pt = latlngs[i];
+            const dLat = pt.lat - lastPt.lat;
+            const dLng = pt.lng - lastPt.lng;
+            if ((dLat * dLat + dLng * dLng) > distSqLimit) {
+                filteredLatLngs.push(pt);
+                lastPt = pt;
+            }
+        }
+        // Always close with the last point if it's different and we have enough points
+        if (filteredLatLngs.length < 3) {
+            // Fallback to raw if we filtered too much
+            // But raw might be too huge... let's just use raw if filtered is invalid
+            // Or better, just rely on the fact that 3 points are minimum.
+            // If drawing is tiny, raw usage is fine.
+            if (latlngs.length >= 3) {
+                // Reset to raw if filtered is too small but original wasn't
+                // Actually, if original is < 3, it's not a polygon.
+                // We'll just define 'pointsToUse'
+            }
+        }
+
+        const pointsToUse = (filteredLatLngs.length >= 3) ? filteredLatLngs : latlngs;
+
+        // Round to 5 decimal places (~1m precision) to save string length
+        const polyStr = pointsToUse.map(ll => `${ll.lat.toFixed(5)} ${ll.lng.toFixed(5)}`).join(' ');
 
         selectedCats.forEach(cat => {
             if (TOURISM_FILTERS[cat]) {
@@ -176,7 +207,7 @@ async function searchSpots() {
         });
 
         const overpassQuery = `
-        [out:json][timeout:30];
+        [out:json][timeout:60];
         (
           ${queryParts}
         );
@@ -185,9 +216,9 @@ async function searchSpots() {
         out center body;
         `;
 
-        // 15 sec timeout for fetch
+        // 60 sec timeout for fetch (matching API)
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const timeoutId = setTimeout(() => controller.abort(), 60000);
 
         const response = await fetch("https://overpass.kumi.systems/api/interpreter", {
             method: "POST",
