@@ -379,8 +379,8 @@ function onMapMouseUp(e) {
     // Enable search button (just in case)
     document.getElementById('search-btn').disabled = false;
 
-    // Auto-search for better UX (especially on mobile where sidebar is hidden)
-    searchSpots();
+    // Auto-search removed per user request
+    // searchSpots();
 }
 
 // --- API Logic ---
