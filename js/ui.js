@@ -22,11 +22,17 @@ export function initUI(map) {
         // Share Button
         const shareBtn = document.createElement('button');
         shareBtn.textContent = "🔗 共有";
-        e.stopPropagation(); // Prevent sidebar toggle
-        generateShareURL(mapInstance);
-    });
+        shareBtn.className = "mode-btn";
+        shareBtn.style.padding = "5px 10px";
+        shareBtn.style.fontSize = "0.9rem";
 
-    sidebarHeader.appendChild(shareBtn);
+        shareBtn.onclick = (e) => {
+            e.stopPropagation(); // Prevent sidebar toggle
+            generateShareURL(mapInstance);
+        };
+
+        header.appendChild(shareBtn);
+    }
 }
 
 // Add Geocoding Search Box (Dynamically injected)
