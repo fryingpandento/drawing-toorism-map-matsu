@@ -72,19 +72,14 @@ export function parseURLParams(map) {
                 const pName = decodeURIComponent(parts[2]);
                 const pClass = parts.length >= 4 ? decodeURIComponent(parts[3]) : '';
 
-                // Create Colored Icon if class exists
-                let icon;
-                if (pClass) {
-                    icon = L.divIcon({
-                        className: `custom-marker ${pClass}`,
-                        iconSize: [20, 20],
-                        iconAnchor: [10, 10],
-                        popupAnchor: [0, -10]
-                    });
-                } else {
-                    // Default marker if no class
-                    icon = new L.Icon.Default();
-                }
+                // Always use Custom Marker
+                // If pClass is empty, it will be gray (#666) defined in CSS .custom-marker
+                const icon = L.divIcon({
+                    className: `custom-marker ${pClass}`,
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10],
+                    popupAnchor: [0, -10]
+                });
 
                 const marker = L.marker([pLat, pLon], { icon: icon }).bindPopup(pName);
                 marker.addTo(map);
