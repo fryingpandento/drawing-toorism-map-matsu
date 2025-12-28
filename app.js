@@ -536,40 +536,58 @@ function createCard(spot, container) {
     const tags = spot.tags || {};
     const name = tags.name;
 
-    // Subtype Logic (Map to Friendly Categories & Colors)
+    // Subtype Logic (Detailed Labels & Color Classes)
     let subtype = "スポット";
     let tagClass = ""; // Default grey
 
-    if (tags.tourism === 'viewpoint' || tags.natural === 'peak' || tags.waterway === 'waterfall' || tags.natural === 'beach') {
-        subtype = "📸 絶景・自然";
-        tagClass = "tag-nature";
-    }
-    else if (tags.historic || tags.amenity === 'place_of_worship') {
-        subtype = "⛩️ 歴史・神社仏閣";
+    // --- 絶景・自然 (Green) ---
+    if (tags.tourism === 'viewpoint') { subtype = "📸 展望台"; tagClass = "tag-nature"; }
+    else if (tags.natural === 'peak') { subtype = "⛰️ 山"; tagClass = "tag-nature"; }
+    else if (tags.waterway === 'waterfall') { subtype = "💧 滝"; tagClass = "tag-nature"; }
+    else if (tags.natural === 'beach') { subtype = "🏖️ 海・ビーチ"; tagClass = "tag-nature"; }
+
+    // --- 歴史 (Brown) ---
+    else if (tags.historic === 'castle' || tags.castle_type) { subtype = "🏯 城・城跡"; tagClass = "tag-history"; }
+    else if (tags.amenity === 'place_of_worship') {
+        if (tags.religion === 'shinto') subtype = "⛩️ 神社";
+        else if (tags.religion === 'buddhist') subtype = "🙏 寺院";
+        else subtype = "⛩️ 寺社・宗教";
         tagClass = "tag-history";
     }
-    else if (tags.tourism === 'museum' || tags.tourism === 'artwork' || tags.tourism === 'gallery') {
-        subtype = "🎨 芸術・博物館";
-        tagClass = "tag-art";
-    }
-    else if (tags.amenity === 'public_bath' || tags.natural === 'hot_spring' || tags.tourism === 'hotel') {
-        subtype = "♨️ 温泉・リラックス";
-        tagClass = "tag-relax";
-    }
-    else if (tags.tourism === 'theme_park' || tags.tourism === 'zoo' || tags.tourism === 'aquarium' || tags.leisure === 'resort') {
-        subtype = "🎡 エンタメ・体験";
-        tagClass = "tag-entertainment";
-    }
-    else if (tags.amenity === 'restaurant' || tags.amenity === 'cafe' || tags.amenity === 'fast_food' || tags.amenity === 'food_court') {
-        subtype = "🍴 グルメ・食事";
+    else if (tags.historic) { subtype = "📜 史跡・旧跡"; tagClass = "tag-history"; }
+
+    // --- 芸術 (Purple) ---
+    else if (tags.tourism === 'museum') { subtype = "🏛️ 博物館"; tagClass = "tag-art"; }
+    else if (tags.tourism === 'artwork') { subtype = "🎨 アート"; tagClass = "tag-art"; }
+    else if (tags.tourism === 'gallery') { subtype = "🖼️ ギャラリー"; tagClass = "tag-art"; }
+
+    // --- 温泉 (Cyan) ---
+    else if (tags.amenity === 'public_bath' || tags.natural === 'hot_spring' || tags.nmt === 'onsen') { subtype = "♨️ 温泉"; tagClass = "tag-relax"; }
+    else if (tags.tourism === 'hotel' || tags.tourism === 'hostel' || tags.tourism === 'guest_house') { subtype = "🏨 宿泊"; tagClass = "tag-relax"; }
+
+    // --- エンタメ (Orange) ---
+    else if (tags.tourism === 'theme_park') { subtype = "🎡 テーマパーク"; tagClass = "tag-entertainment"; }
+    else if (tags.tourism === 'zoo') { subtype = "🦁 動物園"; tagClass = "tag-entertainment"; }
+    else if (tags.tourism === 'aquarium') { subtype = "🐬 水族館"; tagClass = "tag-entertainment"; }
+    else if (tags.leisure === 'park') { subtype = "� 公園"; tagClass = "tag-entertainment"; }
+
+    // --- 食事 (Pink) ---
+    else if (tags.amenity === 'restaurant') {
+        if (tags.cuisine === 'ramen') subtype = "🍜 ラーメン";
+        else if (tags.cuisine === 'japanese' || tags.cuisine === 'sushi') subtype = "🍱 日本料理";
+        else if (tags.cuisine === 'italian') subtype = "🍝 イタリアン";
+        else subtype = "🍽️ レストラン";
         tagClass = "tag-food";
     }
+    else if (tags.amenity === 'cafe') { subtype = "☕ カフェ"; tagClass = "tag-food"; }
+    else if (tags.amenity === 'fast_food') { subtype = "🍔 ファストフード"; tagClass = "tag-food"; }
+    else if (tags.amenity === 'food_court') { subtype = "🍴 フードコート"; tagClass = "tag-food"; }
 
-    // Fallback overrides
-    else if (tags.amenity) subtype = tags.amenity;
-    else if (tags.historic) subtype = tags.historic;
-    else if (tags.tourism) subtype = tags.tourism;
-    else if (tags.natural) subtype = tags.natural;
+    // Fallback: Use raw tag if nothing matched but likely a category
+    else if (tags.amenity) { subtype = tags.amenity; }
+    else if (tags.historic) { subtype = tags.historic; tagClass = "tag-history"; }
+    else if (tags.tourism) { subtype = tags.tourism; }
+    else if (tags.natural) { subtype = tags.natural; tagClass = "tag-nature"; }
 
     // Details Elements
     const detailsHtml = [];
