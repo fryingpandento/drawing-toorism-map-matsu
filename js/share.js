@@ -19,8 +19,10 @@ export function generateShareURL(map) {
     const favorites = getFavorites();
     if (favorites.length > 0) {
         const pinsStr = favorites.map(fav => {
-            // Encode name to be safe
-            return `${fav.lat.toFixed(5)},${fav.lon.toFixed(5)},${encodeURIComponent(fav.name)}`;
+            // Include markerClass (defaults to '' if missing)
+            const cls = fav.markerClass || '';
+            // Format: lat,lon,name,markerClass
+            return `${fav.lat.toFixed(5)},${fav.lon.toFixed(5)},${encodeURIComponent(fav.name)},${encodeURIComponent(cls)}`;
         }).join('|');
         params.set('pins', pinsStr);
     } else {
@@ -68,8 +70,23 @@ export function parseURLParams(map) {
                 const pLat = parseFloat(parts[0]);
                 const pLon = parseFloat(parts[1]);
                 const pName = decodeURIComponent(parts[2]);
+                const pClass = parts.length >= 4 ? decodeURIComponent(parts[3]) : '';
 
-                const marker = L.marker([pLat, pLon]).bindPopup(pName);
+                // Create Colored Icon if class exists
+                let icon;
+                if (pClass) {
+                    icon = L.divIcon({
+                        className: `custom-marker ${pClass}`,
+                        iconSize: [20, 20],
+                        iconAnchor: [10, 10],
+                        popupAnchor: [0, -10]
+                    });
+                } else {
+                    // Default marker if no class
+                    icon = new L.Icon.Default();
+                }
+
+                const marker = L.marker([pLat, pLon], { icon: icon }).bindPopup(pName);
                 marker.addTo(map);
                 markerGroup.addLayer(marker);
             }
