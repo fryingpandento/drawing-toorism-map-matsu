@@ -200,6 +200,7 @@ export function setMode(mode) {
             if (mapInstance && mapInstance.dragging) mapInstance.dragging.enable();
             if (mapContainer) mapContainer.style.cursor = 'pointer';
 
+        }
     }
 }
 
