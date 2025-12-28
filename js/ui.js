@@ -461,43 +461,40 @@ export function createCard(spot, container) {
     card.querySelectorAll('.route-set-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const role = btn.dataset.role; // 'start' or 'end'
+            try {
+                const role = btn.dataset.role; // 'start' or 'end'
 
-            // Switch to Route Mode if not active
-            if (currentMode !== 'route') {
-                setMode('route');
-            }
+                // Check dependencies
+                if (!mapInstance) throw new Error("Map instance is missing");
+                if (typeof setExplicitRoutePoint !== 'function') throw new Error("setExplicitRoutePoint is not a function");
 
-            // Set Point
-            const latlng = { lat: spot.lat, lng: spot.lon };
-            const status = setExplicitRoutePoint(mapInstance, latlng, role);
-
-            // Update Status UI (Need to expose updateRouteStatus or trigger event? It's local.)
-            // We can re-select the message element or expose the function.
-            // Since `updateRouteStatus` is inside `initUI`, we can't call it directly from here easily if `createCard` is separate.
-            // Wait, `createCard` is exported and OUTSIDE `initUI`.
-            // So `updateRouteStatus` is NOT accessible!
-            // Correct. I messed up the scope in my thought process.
-            // `updateRouteStatus` is defined inside `initUI`.
-            // I should move `updateRouteStatus` to module scope or export it.
-            // For now, I will dispatch a custom event or find the element and update it manually?
-            // Safer: Dispatch event `route-status-change`.
-            // OR checks DOM elements directly here since `updateRouteStatus` just updates DOM.
-
-            // Let's implement DOM update directly here to avoid large refactors.
-            const msg = document.getElementById('route-msg');
-            const genBtn = document.getElementById('route-gen');
-            if (msg && genBtn) {
-                if (status === 'start_set') {
-                    msg.textContent = "【手順②】次はゴール地点(G)を選択してください";
-                    msg.style.color = "#d32f2f";
-                } else if (status === 'goal_set') {
-                    msg.textContent = "準備OK！「生成」ボタンを押してください";
-                    msg.style.color = "#388e3c";
-                    genBtn.disabled = false;
-                    genBtn.style.backgroundColor = "#ff4b4b";
-                    genBtn.style.color = "white";
+                // Switch to Route Mode if not active
+                if (currentMode !== 'route') {
+                    setMode('route');
                 }
+
+                // Set Point
+                const latlng = { lat: spot.lat, lng: spot.lon };
+                const status = setExplicitRoutePoint(mapInstance, latlng, role);
+
+                // Update Status UI
+                const msg = document.getElementById('route-msg');
+                const genBtn = document.getElementById('route-gen');
+                if (msg && genBtn) {
+                    if (status === 'start_set') {
+                        msg.textContent = "【手順②】次はゴール地点(G)を選択してください";
+                        msg.style.color = "#d32f2f";
+                    } else if (status === 'goal_set') {
+                        msg.textContent = "準備OK！「生成」ボタンを押してください";
+                        msg.style.color = "#388e3c";
+                        genBtn.disabled = false;
+                        genBtn.style.backgroundColor = "#ff4b4b";
+                        genBtn.style.color = "white";
+                    }
+                }
+            } catch (err) {
+                console.error("Route Button Error:", err);
+                alert("エラーが発生しました: " + err.message);
             }
         });
     });
