@@ -1,6 +1,6 @@
 import { initMap } from './map.js';
 import { initUI, setMode } from './ui.js';
-import { initFavorites, toggleFavorite, removeFavorite } from './store.js';
+import { initFavorites, toggleFavorite, removeFavorite } from './store.js?v=2';
 import { parseURLParams } from './share.js';
 import { searchLocation } from './geocoder.js';
 
