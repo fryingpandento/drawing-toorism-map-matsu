@@ -38,7 +38,7 @@ export async function searchSpots(layer) {
     });
 
     const overpassQuery = `
-    [out:json][timeout:60];
+    [out:json][timeout:30];
     (
       ${queryParts}
     );
@@ -48,14 +48,24 @@ export async function searchSpots(layer) {
     `;
 
     try {
-        const response = await fetch("https://overpass.kumi.systems/api/interpreter", {
+        const response = await fetch("https://overpass-api.de/api/interpreter", {
             method: "POST",
             body: "data=" + encodeURIComponent(overpassQuery)
         });
 
-        if (!response.ok) throw new Error(response.status);
+        if (!response.ok) {
+            throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        }
 
-        const data = await response.json();
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.error("JSON Parse Error. Response was:", text);
+            throw new Error("Invalid JSON response from API");
+        }
+
         const elements = data.elements || [];
 
         // 4. Client-side Processing
