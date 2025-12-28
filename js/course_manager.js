@@ -123,22 +123,4 @@ export function loadCourse(map, course) {
     map.fitBounds(courseLayer.getBounds().pad(0.2));
 }
 
-const coursePoints = [
-    { name: "スタート", lat: startPoint.lat, lon: startPoint.lng },
-    ...sortedWaypoints,
-    { name: "ゴール", lat: endPoint.lat, lon: endPoint.lng }
-];
 
-const course = {
-    title: "🛤️ 寄り道コース",
-    waypoints: coursePoints
-};
-
-loadCourse(map, course);
-alert(`コース生成完了！経由地: ${sortedWaypoints.length}箇所`);
-
-    } catch (err) {
-    console.error(err);
-    alert("コース生成に失敗しました");
-}
-}
