@@ -535,3 +535,11 @@ export function createCard(spot, container) {
 
     container.appendChild(card);
 }
+
+// Global Registration for Compatibility
+window.initUI = initUI;
+window.setMode = setMode;
+window.isDrawingMode = isDrawingMode;
+window.getCurrentMode = getCurrentMode;
+window.displayResults = displayResults;
+window.createCard = createCard;
