@@ -536,22 +536,34 @@ function createCard(spot, container) {
     const tags = spot.tags || {};
     const name = tags.name;
 
-    // Subtype Logic (Map to Friendly Categories)
+    // Subtype Logic (Map to Friendly Categories & Colors)
     let subtype = "スポット";
+    let tagClass = ""; // Default grey
 
-    // Attempt to find a matching category from TOURISM_FILTERS
-    // This is a bit expensive but accurate. 
-    // We check if the spot would have been selected by any of the filters.
-    // Simplifying: Check key tags against known mappings or reverse-check?
-    // Reverse-checking TOURISM_FILTERS query strings is getting complex.
-    // Let's do a direct mapping based on what we know the filters are.
-
-    if (tags.tourism === 'viewpoint' || tags.natural === 'peak' || tags.waterway === 'waterfall' || tags.natural === 'beach') subtype = "📸 絶景・自然";
-    else if (tags.historic || tags.amenity === 'place_of_worship') subtype = "⛩️ 歴史・神社仏閣";
-    else if (tags.tourism === 'museum' || tags.tourism === 'artwork' || tags.tourism === 'gallery') subtype = "🎨 芸術・博物館";
-    else if (tags.amenity === 'public_bath' || tags.natural === 'hot_spring' || tags.tourism === 'hotel') subtype = "♨️ 温泉・リラックス";
-    else if (tags.tourism === 'theme_park' || tags.tourism === 'zoo' || tags.tourism === 'aquarium' || tags.leisure === 'resort') subtype = "🎡 エンタメ・体験";
-    else if (tags.amenity === 'restaurant' || tags.amenity === 'cafe' || tags.amenity === 'fast_food' || tags.amenity === 'food_court') subtype = "🍴 グルメ・食事";
+    if (tags.tourism === 'viewpoint' || tags.natural === 'peak' || tags.waterway === 'waterfall' || tags.natural === 'beach') {
+        subtype = "📸 絶景・自然";
+        tagClass = "tag-nature";
+    }
+    else if (tags.historic || tags.amenity === 'place_of_worship') {
+        subtype = "⛩️ 歴史・神社仏閣";
+        tagClass = "tag-history";
+    }
+    else if (tags.tourism === 'museum' || tags.tourism === 'artwork' || tags.tourism === 'gallery') {
+        subtype = "🎨 芸術・博物館";
+        tagClass = "tag-art";
+    }
+    else if (tags.amenity === 'public_bath' || tags.natural === 'hot_spring' || tags.tourism === 'hotel') {
+        subtype = "♨️ 温泉・リラックス";
+        tagClass = "tag-relax";
+    }
+    else if (tags.tourism === 'theme_park' || tags.tourism === 'zoo' || tags.tourism === 'aquarium' || tags.leisure === 'resort') {
+        subtype = "🎡 エンタメ・体験";
+        tagClass = "tag-entertainment";
+    }
+    else if (tags.amenity === 'restaurant' || tags.amenity === 'cafe' || tags.amenity === 'fast_food' || tags.amenity === 'food_court') {
+        subtype = "🍴 グルメ・食事";
+        tagClass = "tag-food";
+    }
 
     // Fallback overrides
     else if (tags.amenity) subtype = tags.amenity;
@@ -610,7 +622,7 @@ function createCard(spot, container) {
             ${name} <span style="font-size:0.8em; color:#ff4b4b; margin-left:5px;">📍${distText}</span>
         </div>
         <div style="margin: 5px 0;">
-            <span class="spot-tag">${subtype}</span>
+            <span class="spot-tag ${tagClass}">${subtype}</span>
             <span class="spot-details">${detailsHtml.join(' ')}</span>
         </div>
         <div style="display:flex; gap:10px; margin-top:8px;">
