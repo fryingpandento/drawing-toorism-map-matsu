@@ -54,7 +54,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 5. Parse URL Params to Restore State
-    parseURLParams(map);
+    const shouldSearch = parseURLParams(map);
+    if (shouldSearch) {
+        // Trigger search using the map bounds
+        import('./api.js').then(module => module.searchSpots(map));
+    }
 
     // 6. Expose Global Functions
     window.toggleFavorite = toggleFavorite;

@@ -59,4 +59,6 @@ export function parseURLParams(map) {
             }
         });
     }
+
+    return (lat && lon && zoom) || cats; // Return true if valid params found
 }
