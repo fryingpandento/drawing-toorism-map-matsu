@@ -55,37 +55,7 @@ export function initUI(map) {
     }
 
 
-    // Add Geocoding Search Box (Dynamically injected)
-    // Insert after the description or before Region Select
-    const description = document.querySelector('.description');
-    if (description) {
-        const searchContainer = document.createElement('div');
-        searchContainer.className = 'control-group';
-        searchContainer.style.marginBottom = '10px';
-        searchContainer.innerHTML = `
-            <label style="display:flex; justify-content:space-between; align-items:center;">
-                地名検索
-                <span style="font-size:0.8em; color:#666; font-weight:normal;">(例: 東京駅)</span>
-            </label>
-            <div style="display:flex; gap:5px;">
-                <input type="text" id="geo-input" placeholder="地名を入力..." style="flex:1; padding:5px;">
-                <button id="geo-search-btn" style="padding:5px 10px; cursor:pointer;">🔍</button>
-            </div>
-        `;
-        // Insert after description
-        description.parentNode.insertBefore(searchContainer, description.nextSibling);
-        // Actually, maybe better BEFORE description or Region select?
-        // Let's put it BEFORE the Region Select (which is after description usually? check HTML)
-        // HTML: .description is after Region Select? No.
-        // Let's check HTML.
-        // <div class="control-group">Region</div> -> <p class="description">
-        // So maybe BEFORE Region select is better for visibility.
-    } else {
-        // Fallback: prepend to sidebar content container
-        // But let's verify HTML structure first? 
-        // I'll just append to .control-group container if I can find it.
-        // Or simpler: Insert before region-select wrapper.
-    }
+
 
     // Better Strategy: Insert before #region-select's parent .control-group
     const targetSelect = document.getElementById('region-select');
