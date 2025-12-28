@@ -633,6 +633,7 @@ function isFavorite(name) {
 }
 
 function toggleFavorite(name, lat, lon, btn) {
+    const safeName = name.replace(/'/g, "\\'");
     if (favoriteIds.has(name)) {
         // Remove
         favoriteIds.delete(name);
@@ -653,13 +654,48 @@ function toggleFavorite(name, lat, lon, btn) {
     saveFavorites();
 }
 
+// Global function for Popup button
+window.removeFavorite = function (name) {
+    if (favoriteIds.has(name)) {
+        favoriteIds.delete(name);
+        removeFromFavoritesLayer(name);
+        saveFavorites();
+
+        // Find and update any visible pin buttons for this spot
+        // We look for buttons with the specific onclick attribute pattern or just re-render?
+        // Simpler: Query strictly by class and check context? 
+        // For now, let's just find buttons that might match.
+        // Actually, we can just search all .pin-btn.active and check their onclick? 
+        // A bit messy. Let's strictly rely on user re-searching or clicking toggle.
+        // But for better UX, let's try to update if found.
+        const buttons = document.querySelectorAll('.pin-btn.active');
+        buttons.forEach(btn => {
+            // Check if this button belongs to the item. 
+            // The onclick string contains the name.
+            if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(name.replace(/'/g, "\\'"))) {
+                btn.textContent = "☆ ピン留め";
+                btn.classList.remove('active');
+            }
+        });
+    }
+};
+
 function addToFavoritesLayer(name, lat, lon) {
-    // Check if duplicate marker exists? 
-    // Simple implementation: Store marker reference?
-    // For now, simple implementation logic.
     const marker = L.marker([lat, lon], { title: name }).addTo(favoritesLayer);
     marker.customId = name;
-    marker.bindPopup(`<b>${name}</b><br>★ お気に入り`);
+
+    // Popup with Unpin Button
+    const safeName = name.replace(/'/g, "\\'");
+    const popupContent = `
+        <div style="text-align:center;">
+            <b>${name}</b><br>
+            <span style="color:#ffd700;">★ お気に入り</span><br>
+            <button onclick="window.removeFavorite('${safeName}')" style="margin-top:5px; padding:3px 8px; cursor:pointer;">
+                解除
+            </button>
+        </div>
+    `;
+    marker.bindPopup(popupContent);
 }
 
 function removeFromFavoritesLayer(name) {
@@ -669,9 +705,8 @@ function removeFromFavoritesLayer(name) {
         }
     });
 }
-
+// (saveFavorites and loadFavorites remain the same or can be included if needed)
 function saveFavorites() {
-    // Persist simply name/lat/lon so we can restore them
     const favs = [];
     favoritesLayer.eachLayer(layer => {
         const latlng = layer.getLatLng();
