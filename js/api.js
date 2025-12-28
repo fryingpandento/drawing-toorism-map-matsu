@@ -98,9 +98,9 @@ export async function searchSpots(layer) {
         applyFilters();
 
     } catch (e) {
-        console.error(e);
-        statusMsg.textContent = "エラーが発生しました";
-        alert("データ取得に失敗しました");
+        console.error("Search failed:", e);
+        statusMsg.textContent = "エラーが発生しました: " + e.message;
+        alert("データ取得に失敗しました: " + e.message);
     }
 }
 

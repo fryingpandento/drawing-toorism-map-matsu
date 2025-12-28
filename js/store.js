@@ -117,3 +117,19 @@ export function loadFavorites() {
         console.error("Failed to load favorites", e);
     }
 }
+
+export function getFavorites() {
+    const favs = [];
+    if (favoritesLayer) {
+        favoritesLayer.eachLayer(layer => {
+            const latlng = layer.getLatLng();
+            favs.push({
+                name: layer.customId,
+                lat: latlng.lat,
+                lon: latlng.lng,
+                markerClass: layer.customClass
+            });
+        });
+    }
+    return favs;
+}
