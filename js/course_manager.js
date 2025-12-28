@@ -121,9 +121,7 @@ export function loadCourse(map, course) {
 
     // Fit Bounds
     map.fitBounds(courseLayer.getBounds().pad(0.2));
-    currentPos = { lat: sortedWaypoints[sortedWaypoints.length - 1].lat, lng: sortedWaypoints[sortedWaypoints.length - 1].lon };
 }
-        }
 
 const coursePoints = [
     { name: "スタート", lat: startPoint.lat, lon: startPoint.lng },
