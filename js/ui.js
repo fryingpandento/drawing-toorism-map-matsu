@@ -206,6 +206,12 @@ export function setMode(mode) {
     document.getElementById('mode-box').classList.toggle('active', mode === 'box');
     document.getElementById('mode-radius').classList.toggle('active', mode === 'radius');
 
+    const routeBtn = document.getElementById('mode-route');
+    if (routeBtn) routeBtn.classList.toggle('active', mode === 'route');
+
+    const routePanel = document.getElementById('route-panel');
+    if (routePanel) routePanel.style.display = (mode === 'route') ? 'block' : 'none';
+
     const radiusCtrl = document.getElementById('radius-control');
     if (radiusCtrl) {
         radiusCtrl.style.display = (mode === 'radius') ? 'block' : 'none';
@@ -224,6 +230,9 @@ export function setMode(mode) {
             if (mapInstance && mapInstance.dragging) mapInstance.dragging.disable();
         } else if (mode === 'radius') {
             hint.textContent = "地図上の点をクリックすると、周辺を検索します。";
+            if (mapInstance && mapInstance.dragging) mapInstance.dragging.enable();
+        } else if (mode === 'route') {
+            hint.textContent = "地図を2箇所クリックして、スタートとゴールを決めてください。";
             if (mapInstance && mapInstance.dragging) mapInstance.dragging.enable();
         }
     }
