@@ -611,9 +611,25 @@ function createCard(spot, container) {
         if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('a') || e.target.closest('button')) return;
 
         map.setView([spot.lat, spot.lon], 16);
+
+        // Define popup content dynamically to include Unpin button if favorite
+        let popupContent = `<b>${name}</b><br>📍${distText}`;
+        const safeName = name.replace(/'/g, "\\'");
+
+        if (isFavorite(name)) {
+            popupContent += `
+                <br><span style="color:#ffd700;">★ お気に入り</span><br>
+                <div style="text-align:center;">
+                    <button onclick="window.removeFavorite('${safeName}'); this.closest('.leaflet-popup').remove();" style="margin-top:5px; padding:3px 8px; cursor:pointer;">
+                        解除
+                    </button>
+                </div>
+             `;
+        }
+
         L.popup()
             .setLatLng([spot.lat, spot.lon])
-            .setContent(`<b>${name}</b><br>📍${distText}`)
+            .setContent(popupContent)
             .openOn(map);
 
         // Auto-collapse sidebar on mobile to show map
