@@ -2,7 +2,8 @@ import { REGIONS, TOURISM_FILTERS } from './config.js';
 import { isFavorite, toggleFavorite } from './store.js';
 import { generateShareURL } from './share.js';
 // applyFilters dynamic import used below
-import { setRoutePoint, setExplicitRoutePoint, resetRoutePoints, generateDetourCourse } from './course_manager.js';
+// applyFilters dynamic import used below
+import { generateCourseFromLocation } from './course_manager.js';
 
 let currentMode = 'pan';
 let mapInstance = null; // Store map instance
@@ -10,29 +11,7 @@ let mapInstance = null; // Store map instance
 export function initUI(map) {
     mapInstance = map;
 
-    // Map Click Listener for Route Mode
-    map.on('click', (e) => {
-        if (currentMode === 'route') {
-            const status = setRoutePoint(map, e.latlng);
-            // We need to call updateRouteStatus but it is defined locally inside initUI block in my previous replace (which works if I define it there)
-            // Wait, in my previous replace I defined `updateRouteStatus` INSIDE the block? 
-            // The previous replace replaced lines 34-49. It ENDED with the `updateRouteStatus` function definition?
-            // No, functions defined inside `initUI` (if I pasted it there) are accessible.
-            // But `updateRouteStatus` is needed here.
-            // I should define `updateRouteStatus` at module level or hoisting?
-            // Function declarations are hoisted if at top level of function.
-            // But if I pasted it inside the `if (header)` block?
-            // Looking at my replacement content: It ends with `}` of `if (header)`? No.
-            // My replacement content in previous step closes `if (header)` then defines `hint` logic, then defines `updateRouteStatus`.
-            // So `updateRouteStatus` is inside `initUI` scope? Yes.
-            // So it should be fine.
-            if (typeof updateRouteStatus === 'function') {
-                updateRouteStatus(status);
-            } else {
-                console.error("updateRouteStatus not found");
-            }
-        }
-    });
+
 
     // Sidebar Header: Add Share and Auto Course Buttons
     const header = document.querySelector('#sidebar h1');
@@ -54,61 +33,12 @@ export function initUI(map) {
             generateShareURL(mapInstance);
         };
 
-        // Route Mode Button (Replaces Auto Course)
-        const routeBtn = document.createElement('button');
-        routeBtn.textContent = "📍 ルート作成";
-        routeBtn.className = "mode-btn";
-        routeBtn.style.padding = "5px 10px";
-        routeBtn.style.fontSize = "0.9rem";
-        routeBtn.style.backgroundColor = "#e0f7fa";
-        routeBtn.style.color = "#006064";
-
-        routeBtn.onclick = (e) => {
-            e.stopPropagation();
-            setMode('route');
-        };
-
         actionContainer.appendChild(shareBtn);
-        actionContainer.appendChild(routeBtn);
 
         header.parentNode.insertBefore(actionContainer, header.nextSibling);
     }
 
-    // Route Control Panel (Hidden by default)
-    const hint = document.getElementById('mode-hint');
-    if (hint) {
-        const routePanel = document.createElement('div');
-        routePanel.id = "route-panel";
-        routePanel.style.display = "none";
-        routePanel.style.padding = "10px";
-        routePanel.style.background = "#fff3cd"; // Yellowish
-        routePanel.style.border = "1px solid #ffeeba";
-        routePanel.style.borderRadius = "5px";
-        routePanel.style.marginTop = "10px";
-        routePanel.style.marginBottom = "5px";
-        routePanel.innerHTML = `
-            <div id="route-msg" style="font-weight:bold; margin-bottom:5px; font-size:0.9em;">【手順①】地図をクリックしてスタート地点(S)を選択</div>
-            <div style="display:flex; gap:5px;">
-                <button id="route-reset" style="flex:1; padding:5px;">リセット</button>
-                <button id="route-gen" style="flex:1; padding:5px; font-weight:bold; background:#ccc; color:white; border:none;" disabled>生成</button>
-            </div>
-        `;
-        // Insert after hint
-        hint.parentNode.insertBefore(routePanel, hint.nextSibling);
 
-        // Bind Events
-        routePanel.querySelector('#route-reset').onclick = () => {
-            resetRoutePoints(mapInstance);
-            updateRouteStatus('reset');
-        };
-        routePanel.querySelector('#route-gen').onclick = async function () {
-            this.textContent = "生成中...";
-            this.disabled = true;
-            await generateDetourCourse(mapInstance);
-            this.textContent = "生成";
-            this.disabled = false;
-        };
-    }
 
 
 
@@ -132,28 +62,7 @@ export function initUI(map) {
         }
     }
 
-    function updateRouteStatus(status) {
-        const msg = document.getElementById('route-msg');
-        const genBtn = document.getElementById('route-gen');
-        if (!msg || !genBtn) return;
 
-        if (status === 'start_set') {
-            msg.textContent = "【手順②】次はゴール地点(G)を選択してください";
-            msg.style.color = "#d32f2f";
-        } else if (status === 'goal_set') {
-            msg.textContent = "準備OK！「生成」ボタンを押してください";
-            msg.style.color = "#388e3c";
-            genBtn.disabled = false;
-            genBtn.style.backgroundColor = "#ff4b4b";
-            genBtn.style.color = "white";
-        } else if (status === 'reset') {
-            msg.textContent = "【手順①】地図をクリックしてスタート地点(S)を選択";
-            msg.style.color = "black";
-            genBtn.disabled = true;
-            genBtn.style.backgroundColor = "#ccc";
-            genBtn.style.color = "white";
-        }
-    }
 
 }
 
@@ -260,11 +169,7 @@ export function setMode(mode) {
     document.getElementById('mode-box').classList.toggle('active', mode === 'box');
     document.getElementById('mode-radius').classList.toggle('active', mode === 'radius');
 
-    const routeBtn = document.getElementById('mode-route');
-    if (routeBtn) routeBtn.classList.toggle('active', mode === 'route');
 
-    const routePanel = document.getElementById('route-panel');
-    if (routePanel) routePanel.style.display = (mode === 'route') ? 'block' : 'none';
 
     const radiusCtrl = document.getElementById('radius-control');
     if (radiusCtrl) {
@@ -294,11 +199,7 @@ export function setMode(mode) {
             hint.textContent = "地図上の点をクリックすると、周辺を検索します。";
             if (mapInstance && mapInstance.dragging) mapInstance.dragging.enable();
             if (mapContainer) mapContainer.style.cursor = 'pointer';
-        } else if (mode === 'route') {
-            hint.textContent = "地図を2箇所クリックして、スタートとゴールを決めてください。";
-            if (mapInstance && mapInstance.dragging) mapInstance.dragging.enable();
-            if (mapContainer) mapContainer.style.cursor = 'crosshair'; // Change to crosshair
-        }
+
     }
 }
 
@@ -456,53 +357,7 @@ export function createCard(spot, container) {
                 ${pinBtnText}
             </button>
         </div>
-        <div style="display:flex; gap:5px; margin-top:5px;">
-            <button class="route-set-btn start" style="flex:1; background:#e8f5e9; color:#2e7d32; border:1px solid #c8e6c9;" data-role="start">S スタート</button>
-            <button class="route-set-btn goal" style="flex:1; background:#ffebee; color:#c62828; border:1px solid #ffcdd2;" data-role="end">G ゴール</button>
-        </div>
-    `;
 
-    // Bind Route Buttons
-    card.querySelectorAll('.route-set-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            try {
-                const role = btn.dataset.role; // 'start' or 'end'
-
-                // Check dependencies
-                if (!mapInstance) throw new Error("Map instance is missing");
-                if (typeof setExplicitRoutePoint !== 'function') throw new Error("setExplicitRoutePoint is not a function");
-
-                // Switch to Route Mode if not active
-                if (currentMode !== 'route') {
-                    setMode('route');
-                }
-
-                // Set Point
-                const latlng = { lat: spot.lat, lng: spot.lon };
-                const status = setExplicitRoutePoint(mapInstance, latlng, role);
-
-                // Update Status UI
-                const msg = document.getElementById('route-msg');
-                const genBtn = document.getElementById('route-gen');
-                if (msg && genBtn) {
-                    if (status === 'start_set') {
-                        msg.textContent = "【手順②】次はゴール地点(G)を選択してください";
-                        msg.style.color = "#d32f2f";
-                    } else if (status === 'goal_set') {
-                        msg.textContent = "準備OK！「生成」ボタンを押してください";
-                        msg.style.color = "#388e3c";
-                        genBtn.disabled = false;
-                        genBtn.style.backgroundColor = "#ff4b4b";
-                        genBtn.style.color = "white";
-                    }
-                }
-            } catch (err) {
-                console.error("Route Button Error:", err);
-                alert("エラーが発生しました: " + err.message);
-            }
-        });
-    });
 
     card.addEventListener('click', (e) => {
         if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('a') || e.target.closest('button')) return;
