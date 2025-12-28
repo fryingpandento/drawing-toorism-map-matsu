@@ -615,6 +615,10 @@ function createCard(spot, container) {
     const pinBtnText = isFav ? "★ ピン留め済" : "☆ ピン留め";
     const pinBtnClass = isFav ? "pin-btn active" : "pin-btn";
 
+    // Map tag class (e.g. tag-food) to marker class (e.g. marker-food)
+    // Simple replacement since we named them consistently
+    const markerClass = tagClass.replace('tag-', 'marker-');
+
     const card = document.createElement('div');
     card.className = 'spot-card';
     card.innerHTML = `
@@ -627,7 +631,7 @@ function createCard(spot, container) {
         </div>
         <div style="display:flex; gap:10px; margin-top:8px;">
             <a href="${googleUrl}" target="_blank" class="google-btn">🌏 Googleマップ</a>
-            <button class="${pinBtnClass}" onclick="toggleFavorite('${name.replace(/'/g, "\\'")}', ${spot.lat}, ${spot.lon}, this)">
+            <button class="${pinBtnClass}" onclick="toggleFavorite('${name.replace(/'/g, "\\'")}', ${spot.lat}, ${spot.lon}, this, '${markerClass}')">
                 ${pinBtnText}
             </button>
         </div>
@@ -676,7 +680,7 @@ function isFavorite(name) {
     return favoriteIds.has(name);
 }
 
-function toggleFavorite(name, lat, lon, btn) {
+function toggleFavorite(name, lat, lon, btn, markerClass) {
     const safeName = name.replace(/'/g, "\\'");
     if (favoriteIds.has(name)) {
         // Remove
@@ -689,7 +693,7 @@ function toggleFavorite(name, lat, lon, btn) {
     } else {
         // Add
         favoriteIds.add(name);
-        addToFavoritesLayer(name, lat, lon);
+        addToFavoritesLayer(name, lat, lon, markerClass);
         if (btn) {
             btn.textContent = "★ ピン留め済";
             btn.classList.add('active');
@@ -724,9 +728,21 @@ window.removeFavorite = function (name) {
     }
 };
 
-function addToFavoritesLayer(name, lat, lon) {
-    const marker = L.marker([lat, lon], { title: name }).addTo(favoritesLayer);
+function addToFavoritesLayer(name, lat, lon, markerClass) {
+    // Ensure markerClass isn't undefined or null string (e.g. if saved without class)
+    const cls = markerClass || '';
+
+    // Create Custom Icon
+    const icon = L.divIcon({
+        className: `custom-marker ${cls}`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10], // Center it
+        popupAnchor: [0, -10]
+    });
+
+    const marker = L.marker([lat, lon], { title: name, icon: icon }).addTo(favoritesLayer);
     marker.customId = name;
+    marker.customClass = cls; // Save for persistence
 
     // Popup with Unpin Button
     const safeName = name.replace(/'/g, "\\'");
@@ -754,7 +770,12 @@ function saveFavorites() {
     const favs = [];
     favoritesLayer.eachLayer(layer => {
         const latlng = layer.getLatLng();
-        favs.push({ name: layer.customId, lat: latlng.lat, lon: latlng.lng });
+        favs.push({
+            name: layer.customId,
+            lat: latlng.lat,
+            lon: latlng.lng,
+            markerClass: layer.customClass
+        });
     });
     localStorage.setItem('map_favorites', JSON.stringify(favs));
 }
@@ -766,7 +787,7 @@ function loadFavorites() {
             const favs = JSON.parse(saved);
             favs.forEach(f => {
                 favoriteIds.add(f.name);
-                addToFavoritesLayer(f.name, f.lat, f.lon);
+                addToFavoritesLayer(f.name, f.lat, f.lon, f.markerClass);
             });
         }
     } catch (e) {

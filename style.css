@@ -418,6 +418,85 @@ input[type=range]::-moz-range-track {
     }
 }
 
+/* Category Colors */
+.tag-nature {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+/* Green */
+.tag-history {
+    background: #efebe9;
+    color: #5d4037;
+}
+
+/* Brown */
+.tag-art {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+/* Purple */
+.tag-relax {
+    background: #e0f7fa;
+    color: #006064;
+}
+
+/* Cyan */
+.tag-entertainment {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+/* Orange */
+.tag-food {
+    background: #fce4ec;
+    color: #c2185b;
+}
+
+/* Pink */
+
+/* Custom Markers on Map */
+.custom-marker {
+    width: 20px;
+    height: 20px;
+    background-color: #666;
+    /* Default */
+    border: 2px solid white;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    /* For potential icon */
+}
+
+/* Marker Colors (Darker for visibility) */
+.marker-nature {
+    background-color: #2e7d32;
+}
+
+.marker-history {
+    background-color: #5d4037;
+}
+
+.marker-art {
+    background-color: #7b1fa2;
+}
+
+.marker-relax {
+    background-color: #006064;
+}
+
+.marker-entertainment {
+    background-color: #e65100;
+}
+
+.marker-food {
+    background-color: #c2185b;
+}
+
 /* Mode Buttons */
 .mode-btn {
     flex: 1;
