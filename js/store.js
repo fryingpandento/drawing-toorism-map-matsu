@@ -1,3 +1,5 @@
+import { createPopupContent } from './popup.js';
+
 let favoritesLayer; // Layer Group for favorites
 let favoriteIds = new Set(); // Set of IDs
 
@@ -10,7 +12,8 @@ export function isFavorite(name) {
     return favoriteIds.has(name);
 }
 
-export function toggleFavorite(name, lat, lon, btn, markerClass) {
+// Updated to accept TAGS
+export function toggleFavorite(name, lat, lon, btn, markerClass, tags = {}) {
     const safeName = name.replace(/'/g, "\\'");
     if (favoriteIds.has(name)) {
         // Remove
@@ -23,7 +26,8 @@ export function toggleFavorite(name, lat, lon, btn, markerClass) {
     } else {
         // Add
         favoriteIds.add(name);
-        addToFavoritesLayer(name, lat, lon, markerClass);
+        // We pass tags now
+        addToFavoritesLayer(name, lat, lon, markerClass, tags);
         if (btn) {
             btn.textContent = "★ ピン留め済";
             btn.classList.add('active');
@@ -38,20 +42,19 @@ export function removeFavorite(name) {
         removeFromFavoritesLayer(name);
         saveFavorites();
 
+        // Update UI buttons if present
         const buttons = document.querySelectorAll('.pin-btn.active');
         buttons.forEach(btn => {
-            if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(name.replace(/'/g, "\\'"))) {
+            const onClick = btn.getAttribute('onclick');
+            if (onClick && onClick.includes(name.replace(/'/g, "\\'"))) {
                 btn.textContent = "☆ ピン留め";
                 btn.classList.remove('active');
             }
         });
     }
-    // Remove popup if open? Already handled by onclick usually.
-    const map = favoritesLayer._map; // Hack: access map from layer
-    if (map) map.closePopup();
 }
 
-export function addToFavoritesLayer(name, lat, lon, markerClass) {
+export function addToFavoritesLayer(name, lat, lon, markerClass, tags = {}) {
     // Ensure markerClass isn't undefined or null string
     const cls = markerClass || '';
 
@@ -65,19 +68,25 @@ export function addToFavoritesLayer(name, lat, lon, markerClass) {
 
     const marker = L.marker([lat, lon], { title: name, icon: icon }).addTo(favoritesLayer);
     marker.customId = name;
-    marker.customClass = cls; // Save for persistence
+    marker.customClass = cls;
+    marker.customTags = tags; // Store tags for popup
 
-    // Popup with Unpin Button
-    const safeName = name.replace(/'/g, "\\'");
-    const popupContent = `
-        <div style="text-align:center;">
-            <b>${name}</b><br>
-            <span style="color:#ffd700;">★ お気に入り</span><br>
-            <button onclick="window.removeFavorite('${safeName}')" style="margin-top:5px; padding:3px 8px; cursor:pointer;">
-                解除
-            </button>
-        </div>
-    `;
+    // Bind using shared Popup Logic
+    const spotData = {
+        lat: lat,
+        lon: lon,
+        tags: tags,
+        // Distance is unknown/variable here, usually we don't store it.
+        distance: undefined
+    };
+
+    // We pass a callback for the 'Remove' button inside the popup
+    const removeCb = () => {
+        removeFavorite(name);
+        // Map will likely close popup automatically if layer is removed
+    };
+
+    const popupContent = createPopupContent(spotData, true, removeCb);
     marker.bindPopup(popupContent);
 }
 
@@ -97,7 +106,8 @@ export function saveFavorites() {
             name: layer.customId,
             lat: latlng.lat,
             lon: latlng.lng,
-            markerClass: layer.customClass
+            markerClass: layer.customClass,
+            tags: layer.customTags || {} // Save tags
         });
     });
     localStorage.setItem('map_favorites', JSON.stringify(favs));
@@ -110,7 +120,9 @@ export function loadFavorites() {
             const favs = JSON.parse(saved);
             favs.forEach(f => {
                 favoriteIds.add(f.name);
-                addToFavoritesLayer(f.name, f.lat, f.lon, f.markerClass);
+                // Check if tags exist (legacy support)
+                const tags = f.tags || { name: f.name };
+                addToFavoritesLayer(f.name, f.lat, f.lon, f.markerClass, tags);
             });
         }
     } catch (e) {
@@ -127,7 +139,8 @@ export function getFavorites() {
                 name: layer.customId,
                 lat: latlng.lat,
                 lon: latlng.lng,
-                markerClass: layer.customClass
+                markerClass: layer.customClass,
+                tags: layer.customTags
             });
         });
     }
