@@ -464,18 +464,24 @@ export function createCard(spot, container) {
             getWikivoyageSummary(searchTitle).then(summary => {
                 const el = document.getElementById(voyagePlaceholderId);
                 if (el && summary) {
-                    el.style.display = 'block'; // Show container
+                    // Success
+                    el.style.display = 'block';
                     let html = `<strong>🧳 旅行ガイド (${summary.title})</strong><br>`;
                     if (summary.thumbnail) {
-                        // Optional: don't show thumbnail if Wiki already showed one, or show small?
-                        // Let's show it to be safe.
                         html += `<img src="${summary.thumbnail}" style="width:100%; height:auto; border-radius:4px; margin:5px 0;">`;
                     }
                     html += `<div>${summary.extract}</div>`;
                     html += `<div style="text-align:right; margin-top:5px;"><a href="${summary.url}" target="_blank" style="font-size:0.8em;">...Wikivoyageで見る</a></div>`;
                     el.innerHTML = html;
+                } else if (el) {
+                    // No data found
+                    el.style.display = 'none';
                 }
-            }).catch(e => console.warn(e));
+            }).catch(e => {
+                console.warn("Voyage fetch error:", e);
+                const el = document.getElementById(voyagePlaceholderId);
+                if (el) el.style.display = 'none'; // Hide on error
+            });
         }
 
         if (window.innerWidth <= 768) {
