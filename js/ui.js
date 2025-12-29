@@ -4,7 +4,6 @@ import { generateShareURL } from './share.js';
 // applyFilters dynamic import used below
 // applyFilters dynamic import used below
 import { generateThemedCourse } from './course_manager.js';
-import { generateThemedCourse } from './course_manager.js';
 import { getWikipediaSummary, getWikivoyageSummary } from './api.js';
 
 let currentMode = 'pan';
