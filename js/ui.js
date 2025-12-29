@@ -4,6 +4,7 @@ import { generateShareURL } from './share.js';
 // applyFilters dynamic import used below
 // applyFilters dynamic import used below
 import { generateThemedCourse } from './course_manager.js';
+import { getWikipediaSummary } from './api.js';
 
 let currentMode = 'pan';
 let mapInstance = null; // Store map instance
@@ -361,29 +362,65 @@ export function createCard(spot, container) {
     `;
 
 
-    card.addEventListener('click', (e) => {
+    card.addEventListener('click', async (e) => {
         if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('a') || e.target.closest('button')) return;
 
         if (mapInstance) mapInstance.setView([spot.lat, spot.lon], 16);
 
-        let popupContent = `<b>${name}</b><br>📍${distText}`;
-        const safeName = name.replace(/'/g, "\\'");
+        let popupContent = `
+            <div style="font-size:1.1em; font-weight:bold; margin-bottom:5px;">${name}</div>
+            <div style="font-size:0.9em; margin-bottom:5px;">
+                <span style="color:#ff4b4b;">📍 ${distText}</span>
+                <span class="spot-tag ${tagClass}" style="margin-left:5px;">${subtype}</span>
+            </div>
+        `;
 
+        // Add Wiki placeholder if tag exists
+        const wikiTag = tags.wikipedia;
+        let wikiPlaceholderId = null;
+        if (wikiTag) {
+            wikiPlaceholderId = `wiki-summary-${Date.now()}`;
+            popupContent += `<div id="${wikiPlaceholderId}" style="margin-top:10px; padding:10px; background:#f9f9f9; border-radius:5px; font-size:0.9em; color:#666;">Wiki情報読み込み中...</div>`;
+        }
+
+        const safeName = name.replace(/'/g, "\\'");
         if (isFavorite(name)) {
             popupContent += `
-                <br><span style="color:#ffd700;">★ お気に入り</span><br>
-                <div style="text-align:center;">
-                    <button onclick="window.removeFavorite('${safeName}'); this.closest('.leaflet-popup').remove();" style="margin-top:5px; padding:3px 8px; cursor:pointer;">
-                        解除
-                    </button>
+                <div style="margin-top:10px; border-top:1px solid #eee; padding-top:5px; text-align:center;">
+                    <span style="color:#ffd700; font-weight:bold;">★ お気に入り</span>
+                    <button onclick="window.removeFavorite('${safeName}'); this.closest('.leaflet-popup').remove();" style="margin-left:10px; padding:2px 8px; cursor:pointer;">解除</button>
                 </div>
              `;
         }
 
-        L.popup()
+        // Add Links
+        popupContent += `<div style="margin-top:10px;">${detailsHtml.join(' ')}</div>`;
+
+        const popup = L.popup()
             .setLatLng([spot.lat, spot.lon])
             .setContent(popupContent)
             .openOn(mapInstance);
+
+        // Async Fetch Wiki Data
+        if (wikiTag && wikiPlaceholderId) {
+            try {
+                const summary = await getWikipediaSummary(wikiTag);
+                const el = document.getElementById(wikiPlaceholderId);
+                if (el && summary) {
+                    let html = "";
+                    if (summary.thumbnail) {
+                        html += `<img src="${summary.thumbnail}" style="width:100%; height:auto; border-radius:4px; margin-bottom:5px;">`;
+                    }
+                    html += `<div>${summary.extract}</div>`;
+                    html += `<div style="text-align:right; margin-top:5px;"><a href="${summary.url}" target="_blank" style="font-size:0.8em;">...Wikipediaで読む</a></div>`;
+                    el.innerHTML = html;
+                } else if (el) {
+                    el.style.display = 'none'; // Hide if no data
+                }
+            } catch (err) {
+                console.warn("Wiki update failed", err);
+            }
+        }
 
         if (window.innerWidth <= 768) {
             const sidebar = document.getElementById('sidebar');
