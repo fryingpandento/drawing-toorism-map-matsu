@@ -38,7 +38,7 @@ export async function searchSpots(layer) {
     });
 
     const overpassQuery = `
-    [out:json][timeout:60];
+    [out:json][timeout:180];
     (
       ${queryParts}
     );

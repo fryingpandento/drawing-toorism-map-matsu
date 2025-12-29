@@ -358,11 +358,20 @@ export function createCard(spot, container) {
         </div>
         <div style="display:flex; gap:10px; margin-top:8px; flex-wrap:wrap;">
             <a href="${googleUrl}" target="_blank" class="google-btn" style="flex:1; text-align:center;">🌏 Map</a>
-            <button class="${pinBtnClass}" onclick="window.toggleFavorite('${name.replace(/'/g, "\\'")}', ${spot.lat}, ${spot.lon}, this, '${markerClass}')" style="flex:1;">
+            <button class="${pinBtnClass} pin-action-btn" style="flex:1;">
                 ${pinBtnText}
             </button>
         </div>
     `;
+
+    // Attach Pin Button Listener
+    const pinBtn = card.querySelector('.pin-action-btn');
+    if (pinBtn) {
+        pinBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent card click
+            toggleFavorite(name, spot.lat, spot.lon, pinBtn, markerClass, tags);
+        });
+    }
 
 
     card.addEventListener('click', async (e) => {
