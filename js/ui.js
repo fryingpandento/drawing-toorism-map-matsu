@@ -373,9 +373,9 @@ export function createCard(spot, container) {
     const card = document.createElement('div');
     card.className = 'spot-card';
     card.innerHTML = `
-        <div class="spot-title">
             ${name} <span style="font-size:0.8em; color:#ff4b4b; margin-left:5px;">📍${distText}</span>
         </div>
+        ${(tags['addr:province'] || tags['addr:city']) ? `<div style="font-size:0.85em; color:#555; margin-bottom:4px;">🏠 ${tags['addr:province'] || ''}${tags['addr:city'] || ''}</div>` : ''}
         <div style="margin: 5px 0;">
             <span class="spot-tag ${tagClass}">${subtype}</span>
             <span class="spot-details">${detailsHtml.join(' ')}</span>
@@ -409,6 +409,7 @@ export function createCard(spot, container) {
                 <span style="color:#ff4b4b;">📍 ${distText}</span>
                 <span class="spot-tag ${tagClass}" style="margin-left:5px;">${subtype}</span>
             </div>
+            ${(tags['addr:province'] || tags['addr:city']) ? `<div style="font-size:0.85em; color:#555; margin-bottom:4px;"> ${tags['addr:province'] || ''}${tags['addr:city'] || ''}</div>` : ''}
         `;
 
         // Add Wiki placeholder if tag exists
