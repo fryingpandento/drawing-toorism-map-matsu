@@ -124,7 +124,16 @@ export function applyFilters() {
         const tags = spot.tags || {};
         const name = tags.name || "";
 
-        if (text && !name.toLowerCase().includes(text)) return false;
+        // Tag Search: Check if name matches OR any tag value matches
+        let nameMatch = true;
+        if (text) {
+            const nameHit = name.toLowerCase().includes(text);
+            const tagHit = Object.values(tags).some(val =>
+                String(val).toLowerCase().includes(text)
+            );
+            if (!nameHit && !tagHit) return false;
+        }
+
         if (web && !tags.website) return false;
         if (wiki && !tags.wikipedia) return false;
         if (hours && !tags.opening_hours) return false;
@@ -133,4 +142,43 @@ export function applyFilters() {
     });
 
     displayResults(filtered);
+}
+
+/**
+ * Wikipediaの要約を取得する
+ * @param {String} wikiTag Value of 'wikipedia' tag (e.g. "ja:金閣寺" or "Mount_Fuji")
+ */
+export async function getWikipediaSummary(wikiTag) {
+    if (!wikiTag) return null;
+
+    let lang = 'ja';
+    let title = wikiTag;
+
+    // Handle "ja:Title" format
+    if (wikiTag.includes(':')) {
+        const parts = wikiTag.split(':');
+        if (parts.length === 2 && parts[0].length === 2) {
+            lang = parts[0];
+            title = parts[1];
+        }
+    }
+
+    // Clean title (spaces to underscores, though API handles spaces often)
+    const apiUrl = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+
+    try {
+        const res = await fetch(apiUrl);
+        if (!res.ok) return null;
+        const data = await res.json();
+
+        return {
+            title: data.title,
+            extract: data.extract,
+            thumbnail: data.thumbnail ? data.thumbnail.source : null,
+            url: data.content_urls.desktop.page
+        };
+    } catch (e) {
+        console.warn("Wiki summary fetch failed:", e);
+        return null;
+    }
 }
