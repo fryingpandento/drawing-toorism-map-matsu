@@ -43,6 +43,30 @@ export function initUI(map) {
 
 
 
+    // Locate Button
+    const locateBtn = document.getElementById('locate-btn');
+    if (locateBtn) {
+        locateBtn.addEventListener('click', () => {
+            locateBtn.textContent = "⌛ 取得中...";
+            map.locate({ setView: true, maxZoom: 16 });
+        });
+
+        // Map events for location
+        map.on('locationfound', (e) => {
+            locateBtn.textContent = "📍 現在地";
+
+            // Show accuracy circle?
+            const radius = e.accuracy / 2;
+            L.circle(e.latlng, radius).addTo(map).bindPopup("現在地 (精度 " + Math.round(radius * 2) + "m)").openPopup();
+        });
+
+        map.on('locationerror', (e) => {
+            locateBtn.textContent = "📍 現在地";
+            alert("現在地の取得に失敗しました: " + e.message);
+        });
+    }
+
+
     // Geocoding Search Box Injection
     if (!document.getElementById('geo-input')) {
         const targetSelect = document.getElementById('region-select');
