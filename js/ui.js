@@ -323,7 +323,10 @@ export function createCard(spot, container) {
         detailsHtml.push(`<a href="${tags.website}" target="_blank" style="margin-right:5px; text-decoration:none;">🔗 HP</a>`);
     }
     if (tags.opening_hours) {
-        detailsHtml.push(`<span title="${tags.opening_hours}" style="cursor:help;">🕒 時間</span>`);
+        // Format: replace semicolons with space for better inline display
+        // Example: "Mo-Fr 09:00-17:00; Sa 10:00-12:00" -> "Mo-Fr 09:00-17:00 Sa 10:00-12:00"
+        const hours = tags.opening_hours.replace(/;/g, ' / ');
+        detailsHtml.push(`<span style="font-size:0.85em; color:#444;" title="${tags.opening_hours}">🕒 ${hours}</span>`);
     }
 
     let distText = "";
