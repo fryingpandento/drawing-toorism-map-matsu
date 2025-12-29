@@ -25,6 +25,9 @@ export function initMap(mapElement) {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
 
+    // Add Scale Control (Metric only)
+    L.control.scale({ imperial: false }).addTo(map);
+
     // 3. Custom Events
     map.on('mousedown', (e) => startDraw(e, map));
     map.on('mousemove', (e) => moveDraw(e, map));
