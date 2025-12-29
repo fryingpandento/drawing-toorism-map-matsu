@@ -92,6 +92,15 @@ export function initUI(map) {
 
 
 
+    // Region Select Listener (Moved here to access map instance)
+    const regionSelect = document.getElementById('region-select');
+    if (regionSelect) {
+        regionSelect.addEventListener('change', (e) => {
+            const coords = REGIONS[e.target.value];
+            if (map) map.setView([coords[0], coords[1]], coords[2]);
+        });
+    }
+
 }
 
 
@@ -112,11 +121,6 @@ Object.keys(REGIONS).forEach(key => {
     option.textContent = key;
     if (key === "関東 (東京)") option.selected = true;
     regionSelect.appendChild(option);
-});
-
-regionSelect.addEventListener('change', (e) => {
-    const coords = REGIONS[e.target.value];
-    map.setView([coords[0], coords[1]], coords[2]);
 });
 
 // Categories
