@@ -3,7 +3,7 @@ import { isFavorite, toggleFavorite } from './store.js';
 import { generateShareURL } from './share.js';
 // applyFilters dynamic import used below
 // applyFilters dynamic import used below
-import { generateCourseFromLocation } from './course_manager.js';
+import { generateThemedCourse } from './course_manager.js';
 
 let currentMode = 'pan';
 let mapInstance = null; // Store map instance
