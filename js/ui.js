@@ -5,9 +5,12 @@ import { generateShareURL } from './share.js';
 // applyFilters dynamic import used below
 import { generateThemedCourse } from './course_manager.js';
 import { getWikipediaSummary, getWikivoyageSummary } from './api.js';
+import { reverseGeocode } from './geocoder.js';
 
 let currentMode = 'pan';
 let mapInstance = null; // Store map instance
+let fetchQueue = [];
+let isProcessingQueue = false;
 
 export function initUI(map) {
     mapInstance = map;
@@ -250,9 +253,15 @@ export function displayResults(spots) {
         return;
     }
 
+    // Clear Queue
+    fetchQueue = [];
+
     spots.forEach(spot => {
         createCard(spot, list);
     });
+
+    // Start processing queue
+    processFetchQueue();
 
     if (window.innerWidth <= 768) {
         const sidebar = document.getElementById('sidebar');
@@ -370,12 +379,32 @@ export function createCard(spot, container) {
     const pinBtnClass = isFav ? "pin-btn active" : "pin-btn";
     const markerClass = tagClass.replace('tag-', 'marker-');
 
+    // Address Logic
+    let addressText = "";
+    if (tags['addr:full']) {
+        addressText = tags['addr:full'];
+    } else {
+        const province = tags['addr:province'] || "";
+        const city = tags['addr:city'] || "";
+        const suburb = tags['addr:suburb'] || "";
+        const block = tags['addr:block'] || "";
+        const housenumber = tags['addr:housenumber'] || "";
+
+        if (province || city || suburb) {
+            addressText = `${province}${city}${suburb}${block}${housenumber}`;
+        }
+    }
+
     const card = document.createElement('div');
     card.className = 'spot-card';
     card.innerHTML = `
+        <div class="spot-title">
             ${name} <span style="font-size:0.8em; color:#ff4b4b; margin-left:5px;">📍${distText}</span>
         </div>
-        ${(tags['addr:province'] || tags['addr:city']) ? `<div style="font-size:0.85em; color:#555; margin-bottom:4px;">🏠 ${tags['addr:province'] || ''}${tags['addr:city'] || ''}</div>` : ''}
+        ${addressText
+            ? `<div style="font-size:0.85em; color:#555; margin-bottom:4px;">🏠 ${addressText}</div>`
+            : `<div class="addr-placeholder" style="font-size:0.85em; color:#888; margin-bottom:4px;">🏠 読み込み中...</div>`
+        }
         <div style="margin: 5px 0;">
             <span class="spot-tag ${tagClass}">${subtype}</span>
             <span class="spot-details">${detailsHtml.join(' ')}</span>
@@ -398,6 +427,20 @@ export function createCard(spot, container) {
     }
 
 
+    // Add to Queue if address missing
+    if (!addressText) {
+        const placeholder = card.querySelector('.addr-placeholder');
+        if (placeholder) {
+            fetchQueue.push({
+                lat: spot.lat,
+                lon: spot.lon,
+                element: placeholder,
+                spot: spot
+            });
+        }
+    }
+
+
     card.addEventListener('click', async (e) => {
         if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('a') || e.target.closest('button')) return;
 
@@ -409,7 +452,10 @@ export function createCard(spot, container) {
                 <span style="color:#ff4b4b;">📍 ${distText}</span>
                 <span class="spot-tag ${tagClass}" style="margin-left:5px;">${subtype}</span>
             </div>
-            ${(tags['addr:province'] || tags['addr:city']) ? `<div style="font-size:0.85em; color:#555; margin-bottom:4px;"> ${tags['addr:province'] || ''}${tags['addr:city'] || ''}</div>` : ''}
+            ${(spot.tags['addr:full'] || addressText)
+                ? `<div style="font-size:0.85em; color:#555; margin-bottom:4px;">🏠 ${spot.tags['addr:full'] || addressText}</div>`
+                : `<div style="font-size:0.85em; color:#888; margin-bottom:4px; display:flex; align-items:center;">🏠 <button onclick="window.fetchAddress(this, ${spot.lat}, ${spot.lon})" style="border:none; background:none; color:#007bff; cursor:pointer; padding:0; text-decoration:underline;">住所を取得</button></div>`
+            }
         `;
 
         // Add Wiki placeholder if tag exists
@@ -534,4 +580,52 @@ window.setMode = setMode;
 window.isDrawingMode = isDrawingMode;
 window.getCurrentMode = getCurrentMode;
 window.displayResults = displayResults;
+window.fetchAddress = async (btn, lat, lon) => {
+    btn.textContent = "取得中...";
+    btn.disabled = true;
+    const fetchedAddress = await reverseGeocode(lat, lon);
+    if (fetchedAddress) {
+        const container = btn.parentNode;
+        container.innerHTML = `🏠 ${fetchedAddress}`;
+        container.style.color = "#555";
+    } else {
+        btn.textContent = "取得失敗";
+        btn.disabled = false;
+    }
+};
+
 window.createCard = createCard;
+
+// Queue Processor
+async function processFetchQueue() {
+    if (isProcessingQueue) return;
+    isProcessingQueue = true;
+
+    while (fetchQueue.length > 0) {
+        const item = fetchQueue.shift(); // FIFO
+
+        try {
+            const fetchedAddress = await reverseGeocode(item.lat, item.lon);
+
+            if (fetchedAddress) {
+                // Update Card
+                if (item.element) {
+                    item.element.innerHTML = `🏠 ${fetchedAddress}`;
+                    item.element.style.color = "#555";
+                    item.element.classList.remove('addr-placeholder');
+                }
+                // Store in tags so popup uses it
+                item.spot.tags['addr:full'] = fetchedAddress;
+            } else {
+                if (item.element) item.element.textContent = ""; // Hide if failed
+            }
+        } catch (e) {
+            console.warn("Queue fetch error", e);
+        }
+
+        // Wait to respect Rate Limit (1s per request)
+        await new Promise(r => setTimeout(r, 1200));
+    }
+
+    isProcessingQueue = false;
+}

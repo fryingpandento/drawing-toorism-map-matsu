@@ -32,3 +32,30 @@ export async function searchLocation(query) {
         return null; // Handle error gracefully
     }
 }
+
+export async function reverseGeocode(lat, lon) {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
+
+    try {
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'DeepTourismMap/1.0'
+            }
+        });
+
+        if (!response.ok) throw new Error(`Reverse Geocoding error: ${response.status}`);
+
+        const data = await response.json();
+        if (data && data.address) {
+            const addr = data.address;
+            const province = addr.province || addr.state || "";
+            const city = addr.city || addr.town || addr.village || "";
+            // User requested city level only
+            return `${province}${city}` || data.display_name;
+        }
+        return null;
+    } catch (e) {
+        console.error("Reverse geocoding failed:", e);
+        return null;
+    }
+}
