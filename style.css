@@ -527,9 +527,77 @@ input[type=range]::-moz-range-track {
     transition: all 0.2s;
 }
 
-.pin-btn.active {
-    background-color: #ffd700;
-    color: #333;
-    border-color: #ffd700;
+/* Action Bar (Floating Bottom) */
+#action-bar {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    padding: 10px 15px;
+    border-radius: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    display: flex;
+    gap: 10px;
+    z-index: 2500;
+    width: auto;
+    max-width: 95%;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+}
+
+#action-bar button {
+    border: none;
+    background: #f8f9fa;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
     font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+#action-bar button:hover {
+    background: #eee;
+    transform: translateY(-2px);
+}
+
+#action-bar button.active {
+    background: #ff4b4b;
+    color: white;
+}
+
+/* Hide scrollbar for clean look */
+#action-bar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Mobile Adjustments for Action Bar */
+@media (max-width: 768px) {
+    #action-bar {
+        bottom: 90px;
+        /* Above the bottom sidebar */
+        width: 100%;
+        border-radius: 0;
+        bottom: 0;
+        /* Attach to bottom if sidebar is collapsed? No, sidebar is always there */
+        /* Let's float it above the minimal sidebar (80px height) */
+        bottom: 90px;
+        padding: 10px;
+        background: transparent;
+        box-shadow: none;
+        justify-content: flex-start;
+        /* Left align for scrolling */
+    }
+
+    #action-bar button {
+        background: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
 }
