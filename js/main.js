@@ -1,4 +1,4 @@
-import { initMap } from './map.js?v=3.4';
+import { initMap, triggerRadiusSearch } from './map.js?v=3.4';
 import { initUI, setMode } from './ui.js?v=3.4';
 import { initFavorites, toggleFavorite, removeFavorite } from './store.js?v=3.4';
 import { parseURLParams } from './share.js?v=3.4';
@@ -60,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.toggleFavorite = toggleFavorite;
     window.removeFavorite = removeFavorite;
     window.setMode = setMode;
+    window.triggerRadiusSearch = triggerRadiusSearch;
 
     console.log("App initialized via ES Modules");
 });
