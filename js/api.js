@@ -48,48 +48,66 @@ export async function searchSpots(layer) {
     `;
 
     try {
-        // Retry Logic
+        // Endpoints to try
+        const endpoints = [
+            "https://overpass-api.de/api/interpreter",
+            "https://overpass.kumi.systems/api/interpreter",
+            "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+        ];
+
+        let currentEndpointIdx = 0;
         let attempts = 0;
-        const maxAttempts = 4; // Increased to 4 retries for persistence
-        let delay = 2000; // Start with 2s delay
+        const maxAttempts = 6; // Total attempts across endpoints
+        let delay = 2000;
+        let response;
 
         while (attempts < maxAttempts) {
             try {
-                // Signal user if retrying
+                // Signal user
                 if (attempts > 0) {
-                    statusMsg.textContent = `混雑中... 再試行 ${attempts}/${maxAttempts}`;
+                    statusMsg.textContent = `接続中... (${attempts}/${maxAttempts}) - Server ${currentEndpointIdx + 1}`;
                 }
 
-                response = await fetch("https://overpass-api.de/api/interpreter", {
+                // Pick endpoint (Rotate)
+                const url = endpoints[currentEndpointIdx % endpoints.length];
+                console.log(`Fetching from: ${url} (Attempt ${attempts + 1})`);
+
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s client-side timeout
+
+                response = await fetch(url, {
                     method: "POST",
-                    body: "data=" + encodeURIComponent(overpassQuery)
+                    body: "data=" + encodeURIComponent(overpassQuery),
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
 
                 if (response.ok) break; // Success
 
-                // Handle 429 (Too Many Requests) and 5xx (Server Errors like 504 Gateway Timeout)
+                // Handle 429, 504 and others
                 if (response.status === 429 || response.status >= 500) {
-                    attempts++;
-                    console.warn(`API Error ${response.status}. Retrying (${attempts}/${maxAttempts}) in ${delay}ms...`);
-
-                    if (attempts >= maxAttempts) throw new Error(`Server Error: ${response.status}`);
-
-                    await new Promise(r => setTimeout(r, delay));
-                    delay *= 2; // Exponential backoff: 2s -> 4s -> 8s -> 16s
+                    console.warn(`API Error ${response.status} from ${url}`);
+                    // Rotate endpoint for next try
+                    currentEndpointIdx++;
                 } else {
-                    // Client errors (400, etc) should not be retried
                     throw new Error(`API Error: ${response.status} ${response.statusText}`);
                 }
             } catch (err) {
-                // Network errors (fetch failed)
-                attempts++;
-                console.warn(`Fetch connection error. Retrying (${attempts}/${maxAttempts})...`, err);
-
-                if (attempts >= maxAttempts) throw err;
-
-                await new Promise(r => setTimeout(r, delay));
-                delay *= 2;
+                console.warn(`Fetch error from ${endpoints[currentEndpointIdx % endpoints.length]}:`, err);
+                currentEndpointIdx++; // Try next server
             }
+
+            attempts++;
+            if (attempts >= maxAttempts) {
+                if (response && response.status === 504) {
+                    throw new Error("サーバーが混雑しています (504 Gateway Timeout)。時間を置いて試してください。");
+                }
+                throw new Error("すべての接続先で失敗しました。ネットワークを確認してください。");
+            }
+
+            // Backoff logic
+            await new Promise(r => setTimeout(r, delay));
+            delay = Math.min(delay * 1.5, 10000); // Backoff but cap at 10s
         }
 
         if (!response || !response.ok) {
